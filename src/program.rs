@@ -1,5 +1,7 @@
+pub type Number = i64;
+
 #[allow(dead_code)]
-pub fn run_program_with_inputs(original: &Vec<i32>, noun: i32, verb: i32) -> Vec<i32> {
+pub fn run_program_with_inputs(original: &Vec<Number>, noun: Number, verb: Number) -> Vec<Number> {
     let mut program = original.clone();
     program[1] = noun;
     program[2] = verb;
@@ -7,13 +9,20 @@ pub fn run_program_with_inputs(original: &Vec<i32>, noun: i32, verb: i32) -> Vec
 }
 
 #[allow(dead_code)]
-pub fn run_program_with_inputs_and_get_output(original: &Vec<i32>, noun: i32, verb: i32) -> i32 {
+pub fn run_program_with_inputs_and_get_output(
+    original: &Vec<Number>,
+    noun: Number,
+    verb: Number,
+) -> Number {
     let result = run_program_with_inputs(original, noun, verb);
     result[0]
 }
 
 #[allow(dead_code)]
-pub fn run_program_to_get_output(original: &Vec<i32>, desired_output: i32) -> (i32, i32) {
+pub fn run_program_to_get_output(
+    original: &Vec<Number>,
+    desired_output: Number,
+) -> (Number, Number) {
     for i in 0..=99 {
         for j in 0..=99 {
             if run_program_with_inputs_and_get_output(original, i, j) == desired_output {
@@ -25,7 +34,7 @@ pub fn run_program_to_get_output(original: &Vec<i32>, desired_output: i32) -> (i
 }
 
 #[allow(dead_code)]
-pub fn run_program(original: &Vec<i32>) -> Vec<i32> {
+pub fn run_program(original: &Vec<Number>) -> Vec<Number> {
     let mut program = original.clone();
 
     let mut pos = 0;
@@ -64,11 +73,11 @@ pub fn run_program(original: &Vec<i32>) -> Vec<i32> {
             1 => {
                 program[result_index] = program[first_index] + program[second_index];
                 pos += 4;
-            },
+            }
             2 => {
                 program[result_index] = program[first_index] * program[second_index];
                 pos += 4;
-            },
+            }
             99 => break,
             _ => break,
         }
@@ -83,10 +92,19 @@ mod test {
 
     #[test]
     fn test_run_program() {
-        assert_eq!(run_program(&vec![1,9,10,3,2,3,11,0,99,30,40,50]), vec![3500,9,10,70,2,3,11,0,99,30,40,50]);
-        assert_eq!(run_program(&vec![1,0,0,0,99]), vec![2,0,0,0,99]);
-        assert_eq!(run_program(&vec![2,3,0,3,99]), vec![2,3,0,6,99]);
-        assert_eq!(run_program(&vec![2,4,4,5,99,0]), vec![2,4,4,5,99,9801]);
-        assert_eq!(run_program(&vec![1,1,1,4,99,5,6,0,99]), vec![30,1,1,4,2,5,6,0,99]);
+        assert_eq!(
+            run_program(&vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50]),
+            vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
+        );
+        assert_eq!(run_program(&vec![1, 0, 0, 0, 99]), vec![2, 0, 0, 0, 99]);
+        assert_eq!(run_program(&vec![2, 3, 0, 3, 99]), vec![2, 3, 0, 6, 99]);
+        assert_eq!(
+            run_program(&vec![2, 4, 4, 5, 99, 0]),
+            vec![2, 4, 4, 5, 99, 9801]
+        );
+        assert_eq!(
+            run_program(&vec![1, 1, 1, 4, 99, 5, 6, 0, 99]),
+            vec![30, 1, 1, 4, 2, 5, 6, 0, 99]
+        );
     }
 }

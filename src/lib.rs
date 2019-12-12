@@ -1,5 +1,8 @@
 mod fuel;
+mod grid;
 mod program;
+
+use program::Number;
 
 #[cfg(test)]
 mod test {
@@ -9,8 +12,8 @@ mod test {
     fn test_day_01() {
         let input = include_str!("../data/d01.txt").trim().split_whitespace();
 
-        let total: i32 = input
-            .map(|line| line.parse::<i32>().unwrap())
+        let total: Number = input
+            .map(|line| line.parse::<Number>().unwrap())
             .map(|mass| fuel::fuel_needed_for_mass(mass))
             .sum();
 
@@ -21,8 +24,8 @@ mod test {
     fn test_day_01_part_2() {
         let input = include_str!("../data/d01.txt").trim().split_whitespace();
 
-        let total: i32 = input
-            .map(|line| line.parse::<i32>().unwrap())
+        let total: Number = input
+            .map(|line| line.parse::<Number>().unwrap())
             .map(|mass| fuel::total_fuel_needed_for_mass(mass))
             .sum();
 
@@ -31,10 +34,10 @@ mod test {
 
     #[test]
     fn test_day_02() {
-        let mut program: Vec<i32> = include_str!("../data/d02.txt")
+        let mut program: Vec<Number> = include_str!("../data/d02.txt")
             .trim()
             .split(",")
-            .map(|node| node.parse::<i32>().unwrap())
+            .map(|node| node.parse::<Number>().unwrap())
             .collect();
 
         program[1] = 12;
@@ -47,10 +50,10 @@ mod test {
 
     #[test]
     fn test_day_02_with_inputs() {
-        let program: Vec<i32> = include_str!("../data/d02.txt")
+        let program: Vec<Number> = include_str!("../data/d02.txt")
             .trim()
             .split(",")
-            .map(|node| node.parse::<i32>().unwrap())
+            .map(|node| node.parse::<Number>().unwrap())
             .collect();
 
         let result = program::run_program_with_inputs(&program, 12, 2);
@@ -60,10 +63,10 @@ mod test {
 
     #[test]
     fn test_day_02_part_2() {
-        let program: Vec<i32> = include_str!("../data/d02.txt")
+        let program: Vec<Number> = include_str!("../data/d02.txt")
             .trim()
             .split(",")
-            .map(|node| node.parse::<i32>().unwrap())
+            .map(|node| node.parse::<Number>().unwrap())
             .collect();
 
         let (noun, verb) = program::run_program_to_get_output(&program, 19690720);
