@@ -7,7 +7,7 @@ pub struct Coordinate {
 }
 
 impl Coordinate {
-    pub fn distance(&self) -> usize {
+    pub fn manhattan_distance(&self) -> usize {
         (self.x.abs() + self.y.abs()) as usize
     }
 }
@@ -110,13 +110,18 @@ impl From<&str> for Route {
 }
 
 #[derive(Debug, Default)]
-pub struct Grid(Vec<HashSet<Coordinate>>);
+pub struct Grid {
+    coordinates: Vec<Vec<Coordinate>>,
+    // coordinate_sets: Vec<HashSet<Coordinate>>,
+}
 
 impl From<&Vec<Route>> for Grid {
     fn from(routes: &Vec<Route>) -> Self {
         let content = Vec::with_capacity(routes.len());
 
-        let mut grid = Grid(content);
+        let mut grid = Grid {
+            coordinates: content,
+        };
 
         for route in routes.iter() {
             grid.add_route(&route);
@@ -128,28 +133,43 @@ impl From<&Vec<Route>> for Grid {
 
 impl Grid {
     pub fn count(&self) -> usize {
-        self.0.len()
+        self.coordinates.len()
     }
 
     // Returns index of newly created route.
     pub fn add_route(&mut self, route: &Route) -> usize {
         // Initialize new HashSet.
-        let index = self.0.len();
-        self.0.push(HashSet::new());
+        let index = self.coordinates.len();
+        self.coordinates.push(vec![]);
+
+        // println!("route: {:?}", route);
 
         let mut coordinates: Vec<Coordinate>;
         let mut coords: &Vec<Coordinate>;
 
-        let mut start_at: &Coordinate = &self.origin();
+        let origin = self.origin();
+
+        let mut start_at: &Coordinate = &origin;
+
+        self.coordinates[index].push(origin);
+
+        let mut path_count = 0;
 
         for path in route.0.iter() {
             coordinates = Path::coordinates(start_at, path);
 
+            if coordinates.len() < 2 {
+                break
+            }
+
             coords = &coordinates;
 
-            for c in coords {
-                self.0[index].insert(*c);
+            // Skip first coordinate since it will already be there.
+            for c in coords[1..].to_owned() {
+                path_count += 1;
+                self.coordinates[index].push(c);
             }
+
 
             let last_coordinate = match coords.iter().last() {
                 Some(c) => c,
@@ -159,23 +179,40 @@ impl Grid {
             start_at = last_coordinate;
         }
 
+        // println!("path_count: {}", path_count);
+        // The number of coordinates should always be one more than the number of paths.
+        assert_eq!(path_count, self.coordinates[index].len() - 1);
+
+        // println!("self.coordinates[{:?}]: {:?}", index, &self.coordinates[index][0..10]);
+        // println!("self.coordinates[{:?}].len(): {:?}", index, &self.coordinates[index].len());
+
         index
     }
 
     pub fn intersection(&self) -> HashSet<Coordinate> {
-        let content = self.0.clone();
-        let mut iter = content.into_iter();
+        let content = self.coordinates.clone();
 
-        let mut result = iter
+        let mut sets = content
+            .into_iter()
+            .map(|coordinates| {
+                coordinates
+                    .iter()
+                    .cloned()
+                    .collect::<HashSet<Coordinate>>()
+            })
+            .collect::<Vec<HashSet<Coordinate>>>()
+            .into_iter();
+
+        let mut result = sets
             .next()
             .map(|set| {
-                iter.fold(set, |set1, set2| {
+                sets.fold(set, |set1, set2| {
                     set1.intersection(&set2)
                         .cloned()
                         .collect()
                 })
             })
-            .unwrap();
+            .expect("No HashSet found");
 
         // Remove origin.
         result.remove(&self.origin());
@@ -191,8 +228,18 @@ impl Grid {
         let intersection = &self.intersection();
 
         intersection.iter().min_by(|c1, c2| {
-            c1.distance().cmp(&c2.distance())
+            c1.manhattan_distance().cmp(&c2.manhattan_distance())
         }).cloned()
+    }
+
+    pub fn intersection_shortest_path(&self) -> usize {
+        let intersection = &self.intersection();
+
+        // TODO: Get all intersections.
+        // TODO: Find intersection with shortest path.
+        // TODO: Return size of shortest path.
+
+        0
     }
 }
 
@@ -265,6 +312,6 @@ mod test {
             .expect("No closest coordinate found");
 
         assert_eq!(c, Coordinate { x: -2, y: -2 });
-        assert_eq!(c.distance(), 4);
+        assert_eq!(c.manhattan_distance(), 4);
     }
 }

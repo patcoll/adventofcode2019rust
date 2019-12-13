@@ -86,7 +86,7 @@ mod test {
 
         let c1 = test_grid_1.closest_to_origin_in_intersection()
             .expect("No closest coordinate found");
-        assert_eq!(c1.distance(), 159);
+        assert_eq!(c1.manhattan_distance(), 159);
 
         let test_grid_2 = Grid::from(&vec![
             Route::from("R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51"),
@@ -95,7 +95,7 @@ mod test {
 
         let c2 = test_grid_2.closest_to_origin_in_intersection()
             .expect("No closest coordinate found");
-        assert_eq!(c2.distance(), 135);
+        assert_eq!(c2.manhattan_distance(), 135);
 
         // Use data now.
         let routes: Vec<Route> = include_str!("../data/d03.txt")
@@ -106,12 +106,9 @@ mod test {
 
         let grid = Grid::from(&routes);
 
-        match grid.closest_to_origin_in_intersection() {
-            Some(c) => {
-                assert_eq!(c, Coordinate { x: -369, y: 6 });
-                assert_eq!(c.distance(), 375);
-            },
-            _ => panic!("No closest coordinate found"),
-        }
+        let c = grid.closest_to_origin_in_intersection()
+            .expect("No closest coordinate found");
+        assert_eq!(c, Coordinate { x: -369, y: 6 });
+        assert_eq!(c.manhattan_distance(), 375);
     }
 }
