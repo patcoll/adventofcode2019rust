@@ -133,14 +133,14 @@ impl Grid {
 
     // Returns index of newly created route.
     pub fn add_route(&mut self, route: &Route) -> usize {
+        // Initialize new HashSet.
         let index = self.0.len();
+        self.0.push(HashSet::new());
 
         let mut coordinates: Vec<Coordinate>;
         let mut coords: &Vec<Coordinate>;
 
         let mut start_at: &Coordinate = &self.origin();
-
-        let mut hash_set = HashSet::new();
 
         for path in route.0.iter() {
             coordinates = Path::coordinates(start_at, path);
@@ -148,7 +148,7 @@ impl Grid {
             coords = &coordinates;
 
             for c in coords {
-                hash_set.insert(*c);
+                self.0[index].insert(*c);
             }
 
             let last_coordinate = match coords.iter().last() {
@@ -158,8 +158,6 @@ impl Grid {
 
             start_at = last_coordinate;
         }
-
-        self.0.push(hash_set);
 
         index
     }
