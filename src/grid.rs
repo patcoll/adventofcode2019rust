@@ -196,8 +196,6 @@ impl Grid {
             c1.distance().cmp(&c2.distance())
         }).cloned()
     }
-
-    // pub fn distance_to(&self, 
 }
 
 #[cfg(test)]
@@ -265,12 +263,10 @@ mod test {
         assert!(intersection.contains(&Coordinate { x: -2, y: -4 }));
         assert!(intersection.contains(&Coordinate { x: -2, y: -6 }));
 
-        match grid.closest_to_origin_in_intersection() {
-            Some(c) => {
-                assert_eq!(c, Coordinate { x: -2, y: -2 });
-                assert_eq!(c.distance(), 4);
-            },
-            _ => panic!("No closest coordinate found"),
-        }
+        let c = grid.closest_to_origin_in_intersection()
+            .expect("No closest coordinate found");
+
+        assert_eq!(c, Coordinate { x: -2, y: -2 });
+        assert_eq!(c.distance(), 4);
     }
 }
