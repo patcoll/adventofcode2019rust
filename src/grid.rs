@@ -245,7 +245,7 @@ mod test {
     }
 
     #[test]
-    fn test_grid_intersections() {
+    fn test_grid_intersection() {
         let routes = vec![
             Route::from("L2, U10"),
             Route::from("U2, L3, U2, R3, U2, L3, D200, R500"),
