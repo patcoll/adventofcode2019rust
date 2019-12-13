@@ -2,12 +2,12 @@ pub mod fuel;
 pub mod grid;
 pub mod program;
 
-use grid::{Grid, Route, Coordinate};
-use program::Number;
-
 #[cfg(test)]
 mod test {
     use super::*;
+
+    use grid::{Grid, Route, Coordinate};
+    use program::Number;
 
     #[test]
     fn test_day_01() {
