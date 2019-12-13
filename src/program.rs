@@ -1,6 +1,5 @@
 pub type Number = i64;
 
-#[allow(dead_code)]
 pub fn run_program_with_inputs(original: &Vec<Number>, noun: Number, verb: Number) -> Vec<Number> {
     let mut program = original.clone();
     program[1] = noun;
@@ -8,13 +7,11 @@ pub fn run_program_with_inputs(original: &Vec<Number>, noun: Number, verb: Numbe
     run_program(&program)
 }
 
-#[allow(dead_code)]
 pub fn run_program_with_inputs_and_get_output(original: &Vec<Number>, noun: Number, verb: Number) -> Number {
     let result = run_program_with_inputs(original, noun, verb);
     result[0]
 }
 
-#[allow(dead_code)]
 pub fn run_program_to_get_output(original: &Vec<Number>, desired_output: Number) -> (Number, Number) {
     for i in 0..=99 {
         for j in 0..=99 {
@@ -26,7 +23,6 @@ pub fn run_program_to_get_output(original: &Vec<Number>, desired_output: Number)
     (0, 0)
 }
 
-#[allow(dead_code)]
 pub fn run_program(original: &Vec<Number>) -> Vec<Number> {
     let mut program = original.clone();
 

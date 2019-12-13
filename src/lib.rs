@@ -1,6 +1,6 @@
-mod fuel;
-mod grid;
-mod program;
+pub mod fuel;
+pub mod grid;
+pub mod program;
 
 use grid::{Grid, Route, Coordinate};
 use program::Number;

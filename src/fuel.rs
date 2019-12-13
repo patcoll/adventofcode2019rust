@@ -1,6 +1,5 @@
 use crate::program::Number;
 
-#[allow(dead_code)]
 pub fn total_fuel_needed_for_mass(mass: Number) -> Number {
     let mut total: Number = 0;
     let mut calculated: Number;
@@ -21,7 +20,6 @@ pub fn total_fuel_needed_for_mass(mass: Number) -> Number {
     }
 }
 
-#[allow(dead_code)]
 pub fn fuel_needed_for_mass(mass: Number) -> Number {
     mass / 3 - 2
 }
