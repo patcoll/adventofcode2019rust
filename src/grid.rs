@@ -197,8 +197,7 @@ impl Grid {
             .into_iter()
             .map(|coordinates| {
                 coordinates
-                    .iter()
-                    .cloned()
+                    .into_iter()
                     .collect::<HashSet<Coordinate>>()
             })
             .collect::<Vec<HashSet<Coordinate>>>()
