@@ -181,7 +181,6 @@ impl Grid {
             start_at = last_coordinate;
         }
 
-        // println!("path_count: {}", path_count);
         // The number of coordinates should always be one more than the number of paths.
         assert_eq!(path_count, self.coordinates[index].len() - 1);
 
