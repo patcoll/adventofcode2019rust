@@ -109,9 +109,11 @@ impl From<&str> for Route {
     }
 }
 
+type CoordinateList = Vec<Coordinate>;
+
 #[derive(Debug, Default)]
 pub struct Grid {
-    coordinates: Vec<Vec<Coordinate>>,
+    coordinates: Vec<CoordinateList>,
     // coordinate_sets: Vec<HashSet<Coordinate>>,
 }
 
@@ -233,13 +235,33 @@ impl Grid {
     }
 
     pub fn intersection_shortest_path(&self) -> usize {
-        let intersection = &self.intersection();
+        // Get all intersections.
+        let intersection = self.intersection();
+        let intersection_vec = &intersection
+            .into_iter()
+            .collect::<Vec<Coordinate>>();
 
-        // TODO: Get all intersections.
-        // TODO: Find intersection with shortest path.
-        // TODO: Return size of shortest path.
+        let min_path_length = intersection_vec
+            .iter()
+            .map(|&coordinate| {
+                // println!("coordinate: {:?}", coordinate);
 
-        0
+                self.coordinates
+                    .iter()
+                    .map(|coordinate_list| {
+                        coordinate_list
+                            .iter()
+                            .position(|&c| c == coordinate)
+                            .expect("Should find coordinate")
+                    })
+                    .sum::<usize>()
+            })
+            .min()
+            .expect("Expect a usize path length");
+
+        // println!("min_path_length: {:?}", min_path_length);
+
+        min_path_length
     }
 }
 
@@ -313,5 +335,17 @@ mod test {
 
         assert_eq!(c, Coordinate { x: -2, y: -2 });
         assert_eq!(c.manhattan_distance(), 4);
+    }
+
+    #[test]
+    fn test_grid_intersection_shortest_path() {
+        let routes = vec![
+            Route::from("L2, U10"),
+            Route::from("U2, L3, U2, R3, U2, L3, D200, R500"),
+        ];
+
+        let grid = Grid::from(&routes);
+
+        assert_eq!(grid.intersection_shortest_path(), 8);
     }
 }

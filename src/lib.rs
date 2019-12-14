@@ -127,5 +127,16 @@ mod test {
         ]);
 
         assert_eq!(test_grid_2.intersection_shortest_path(), 410);
+
+        // Use data now.
+        let routes: Vec<Route> = include_str!("../data/d03.txt")
+            .trim()
+            .split_whitespace()
+            .map(|line| Route::from(line))
+            .collect();
+
+        let grid = Grid::from(&routes);
+
+        assert_eq!(grid.intersection_shortest_path(), 14746);
     }
 }
