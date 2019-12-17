@@ -1,6 +1,9 @@
+pub mod code;
 pub mod fuel;
 pub mod grid;
 pub mod program;
+
+extern crate rayon;
 
 #[cfg(test)]
 mod test {
@@ -138,5 +141,11 @@ mod test {
         let grid = Grid::from(&routes);
 
         assert_eq!(grid.intersection_shortest_path(), 14746);
+    }
+
+    #[test]
+    fn test_day_04() {
+        assert_eq!(code::find_candidates(273_025..767_253).len(), 910);
+        assert_eq!(code::find_candidates(357_253..892_942).len(), 530);
     }
 }
