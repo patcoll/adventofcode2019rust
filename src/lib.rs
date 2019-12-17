@@ -9,7 +9,7 @@ extern crate rayon;
 mod test {
     use super::*;
 
-    use grid::{Grid, Route, Coordinate};
+    use grid::{Coordinate, Grid, Route};
     use program::Number;
 
     #[test]
@@ -87,7 +87,8 @@ mod test {
             Route::from("U62,R66,U55,R34,D71,R55,D58,R83"),
         ]);
 
-        let c1 = test_grid_1.closest_to_origin_in_intersection()
+        let c1 = test_grid_1
+            .closest_to_origin_in_intersection()
             .expect("No closest coordinate found");
         assert_eq!(c1.manhattan_distance(), 159);
 
@@ -96,7 +97,8 @@ mod test {
             Route::from("U98,R91,D20,R16,D67,R40,U7,R15,U6,R7"),
         ]);
 
-        let c2 = test_grid_2.closest_to_origin_in_intersection()
+        let c2 = test_grid_2
+            .closest_to_origin_in_intersection()
             .expect("No closest coordinate found");
         assert_eq!(c2.manhattan_distance(), 135);
 
@@ -109,7 +111,8 @@ mod test {
 
         let grid = Grid::from(&routes);
 
-        let c = grid.closest_to_origin_in_intersection()
+        let c = grid
+            .closest_to_origin_in_intersection()
             .expect("No closest coordinate found");
         assert_eq!(c, Coordinate { x: -369, y: 6 });
         assert_eq!(c.manhattan_distance(), 375);

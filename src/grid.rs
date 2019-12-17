@@ -59,11 +59,12 @@ impl Path {
     pub fn coordinates(start_at: &Coordinate, path: &Path) -> Vec<Coordinate> {
         let mut coordinates: Vec<Coordinate> = Vec::with_capacity(path.steps);
 
-        let multiplier: i64 = if [Direction::Right, Direction::Down].contains(&path.direction) {
-            1
-        } else {
-            -1
-        };
+        let multiplier: i64 =
+            if [Direction::Right, Direction::Down].contains(&path.direction) {
+                1
+            } else {
+                -1
+            };
 
         if [Direction::Up, Direction::Down].contains(&path.direction) {
             // y direction
@@ -103,7 +104,10 @@ impl From<&str> for Route {
             return Route::default();
         }
 
-        let content: Vec<Path> = paths_text.iter().map(|path_text| Path::from(&path_text[..])).collect();
+        let content: Vec<Path> = paths_text
+            .iter()
+            .map(|path_text| Path::from(&path_text[..]))
+            .collect();
 
         Route(content)
     }
@@ -161,7 +165,7 @@ impl Grid {
             coordinates = Path::coordinates(start_at, path);
 
             if coordinates.len() < 2 {
-                break
+                break;
             }
 
             coords = &coordinates;
@@ -171,7 +175,6 @@ impl Grid {
                 path_count += 1;
                 self.coordinates[index].push(c);
             }
-
 
             let last_coordinate = match coords.iter().last() {
                 Some(c) => c,
@@ -195,11 +198,7 @@ impl Grid {
 
         let mut sets = content
             .into_iter()
-            .map(|coordinates| {
-                coordinates
-                    .into_iter()
-                    .collect::<HashSet<Coordinate>>()
-            })
+            .map(|coordinates| coordinates.into_iter().collect::<HashSet<Coordinate>>())
             .collect::<Vec<HashSet<Coordinate>>>()
             .into_iter();
 
@@ -207,9 +206,7 @@ impl Grid {
             .next()
             .map(|set| {
                 sets.fold(set, |set1, set2| {
-                    set1.intersection(&set2)
-                        .cloned()
-                        .collect()
+                    set1.intersection(&set2).cloned().collect()
                 })
             })
             .expect("No HashSet found");
@@ -227,17 +224,16 @@ impl Grid {
     pub fn closest_to_origin_in_intersection(&self) -> Option<Coordinate> {
         let intersection = &self.intersection();
 
-        intersection.iter().min_by(|c1, c2| {
-            c1.manhattan_distance().cmp(&c2.manhattan_distance())
-        }).cloned()
+        intersection
+            .iter()
+            .min_by(|c1, c2| c1.manhattan_distance().cmp(&c2.manhattan_distance()))
+            .cloned()
     }
 
     pub fn intersection_shortest_path(&self) -> usize {
         // Get all intersections.
         let intersection = self.intersection();
-        let intersection_vec = &intersection
-            .into_iter()
-            .collect::<Vec<Coordinate>>();
+        let intersection_vec = &intersection.into_iter().collect::<Vec<Coordinate>>();
 
         let min_path_length = intersection_vec
             .iter()
@@ -328,7 +324,8 @@ mod test {
         assert!(intersection.contains(&Coordinate { x: -2, y: -4 }));
         assert!(intersection.contains(&Coordinate { x: -2, y: -6 }));
 
-        let c = grid.closest_to_origin_in_intersection()
+        let c = grid
+            .closest_to_origin_in_intersection()
             .expect("No closest coordinate found");
 
         assert_eq!(c, Coordinate { x: -2, y: -2 });

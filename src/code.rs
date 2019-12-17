@@ -1,4 +1,4 @@
-use std::ops::{Range};
+use std::ops::Range;
 
 use rayon::prelude::*;
 
@@ -11,9 +11,7 @@ pub fn find_candidates(range: Range<u32>) -> Vec<u32> {
         .into_par_iter()
         .filter(|n| {
             let digits = int_to_digits(*n);
-            has_increasing_digits(&digits)
-                && has_adjacent_dup(&digits)
-
+            has_increasing_digits(&digits) && has_adjacent_dup(&digits)
         })
         .collect()
 }
@@ -25,35 +23,29 @@ fn has_increasing_digits(number: &Vec<u32>) -> bool {
 
     let mut prev: Option<u32> = None;
 
-    number
-        .iter()
-        .fold(true, |acc, n| {
-            let result = acc && match prev {
-                Some(p) => {
-                    *n >= p
-                },
+    number.iter().fold(true, |acc, n| {
+        let result = acc
+            && match prev {
+                Some(p) => *n >= p,
                 None => true,
             };
-            prev = Some(*n);
-            result
-        })
+        prev = Some(*n);
+        result
+    })
 }
 
 fn has_adjacent_dup(n: &Vec<u32>) -> bool {
     let mut prev: Option<u32> = None;
 
-    let has_adjacent_dup = n
-        .iter()
-        .fold(false, |acc, n| {
-            let result = acc || match prev {
-                Some(p) => {
-                    *n == p
-                },
+    let has_adjacent_dup = n.iter().fold(false, |acc, n| {
+        let result = acc
+            || match prev {
+                Some(p) => *n == p,
                 None => false,
             };
-            prev = Some(*n);
-            result
-        });
+        prev = Some(*n);
+        result
+    });
 
     has_adjacent_dup
 }

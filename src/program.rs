@@ -1,18 +1,29 @@
 pub type Number = i64;
 
-pub fn run_program_with_inputs(original: &Vec<Number>, noun: Number, verb: Number) -> Vec<Number> {
+pub fn run_program_with_inputs(
+    original: &Vec<Number>,
+    noun: Number,
+    verb: Number,
+) -> Vec<Number> {
     let mut program = original.clone();
     program[1] = noun;
     program[2] = verb;
     run_program(&program)
 }
 
-pub fn run_program_with_inputs_and_get_output(original: &Vec<Number>, noun: Number, verb: Number) -> Number {
+pub fn run_program_with_inputs_and_get_output(
+    original: &Vec<Number>,
+    noun: Number,
+    verb: Number,
+) -> Number {
     let result = run_program_with_inputs(original, noun, verb);
     result[0]
 }
 
-pub fn run_program_to_get_output(original: &Vec<Number>, desired_output: Number) -> (Number, Number) {
+pub fn run_program_to_get_output(
+    original: &Vec<Number>,
+    desired_output: Number,
+) -> (Number, Number) {
     for i in 0..=99 {
         for j in 0..=99 {
             if run_program_with_inputs_and_get_output(original, i, j) == desired_output {
@@ -87,7 +98,10 @@ mod test {
         );
         assert_eq!(run_program(&vec![1, 0, 0, 0, 99]), vec![2, 0, 0, 0, 99]);
         assert_eq!(run_program(&vec![2, 3, 0, 3, 99]), vec![2, 3, 0, 6, 99]);
-        assert_eq!(run_program(&vec![2, 4, 4, 5, 99, 0]), vec![2, 4, 4, 5, 99, 9801]);
+        assert_eq!(
+            run_program(&vec![2, 4, 4, 5, 99, 0]),
+            vec![2, 4, 4, 5, 99, 9801]
+        );
         assert_eq!(
             run_program(&vec![1, 1, 1, 4, 99, 5, 6, 0, 99]),
             vec![30, 1, 1, 4, 2, 5, 6, 0, 99]
