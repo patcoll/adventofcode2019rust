@@ -3,6 +3,8 @@ pub mod fuel;
 pub mod grid;
 pub mod program;
 
+#[macro_use]
+extern crate lazy_static;
 extern crate rayon;
 
 #[cfg(test)]
@@ -10,14 +12,13 @@ mod test {
     use super::*;
 
     use grid::{Coordinate, Grid, Route};
-    use program::Number;
 
     #[test]
     fn test_day_01() {
         let input = include_str!("../data/d01.txt").trim().split_whitespace();
 
-        let total: Number = input
-            .map(|line| line.parse::<Number>().unwrap())
+        let total: i64 = input
+            .map(|line| line.parse::<i64>().unwrap())
             .map(|mass| fuel::fuel_needed_for_mass(mass))
             .sum();
 
@@ -28,8 +29,8 @@ mod test {
     fn test_day_01_part_2() {
         let input = include_str!("../data/d01.txt").trim().split_whitespace();
 
-        let total: Number = input
-            .map(|line| line.parse::<Number>().unwrap())
+        let total: i64 = input
+            .map(|line| line.parse::<i64>().unwrap())
             .map(|mass| fuel::total_fuel_needed_for_mass(mass))
             .sum();
 
@@ -38,10 +39,10 @@ mod test {
 
     #[test]
     fn test_day_02() {
-        let mut program: Vec<Number> = include_str!("../data/d02.txt")
+        let mut program: Vec<i64> = include_str!("../data/d02.txt")
             .trim()
             .split(",")
-            .map(|node| node.parse::<Number>().unwrap())
+            .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
         program[1] = 12;
@@ -54,10 +55,10 @@ mod test {
 
     #[test]
     fn test_day_02_with_inputs() {
-        let program: Vec<Number> = include_str!("../data/d02.txt")
+        let program: Vec<i64> = include_str!("../data/d02.txt")
             .trim()
             .split(",")
-            .map(|node| node.parse::<Number>().unwrap())
+            .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
         let result = program::run_program_with_inputs(&program, 12, 2);
@@ -67,10 +68,10 @@ mod test {
 
     #[test]
     fn test_day_02_part_2() {
-        let program: Vec<Number> = include_str!("../data/d02.txt")
+        let program: Vec<i64> = include_str!("../data/d02.txt")
             .trim()
             .split(",")
-            .map(|node| node.parse::<Number>().unwrap())
+            .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
         let (noun, verb) = program::run_program_to_get_output(&program, 19690720);
@@ -150,5 +151,10 @@ mod test {
     fn test_day_04() {
         assert_eq!(code::find_candidates(273_025..767_253).len(), 910);
         assert_eq!(code::find_candidates(357_253..892_942).len(), 530);
+    }
+
+    #[test]
+    fn test_day_04_part_2() {
+        assert_eq!(code::find_candidates_with_one_dup(273_025..767_253).len(), 598);
     }
 }

@@ -1,9 +1,7 @@
-use crate::program::Number;
-
-pub fn total_fuel_needed_for_mass(mass: Number) -> Number {
-    let mut total: Number = 0;
-    let mut calculated: Number;
-    let mut mass_to_calculate: Number = mass;
+pub fn total_fuel_needed_for_mass(mass: i64) -> i64 {
+    let mut total: i64 = 0;
+    let mut calculated: i64;
+    let mut mass_to_calculate: i64 = mass;
 
     loop {
         calculated = fuel_needed_for_mass(mass_to_calculate);
@@ -20,7 +18,7 @@ pub fn total_fuel_needed_for_mass(mass: Number) -> Number {
     }
 }
 
-pub fn fuel_needed_for_mass(mass: Number) -> Number {
+pub fn fuel_needed_for_mass(mass: i64) -> i64 {
     mass / 3 - 2
 }
 
