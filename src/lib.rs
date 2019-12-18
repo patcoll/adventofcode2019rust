@@ -148,13 +148,26 @@ mod test {
     }
 
     #[test]
+    #[ignore]
     fn test_day_04() {
         assert_eq!(code::find_candidates(273_025..767_253).len(), 910);
         assert_eq!(code::find_candidates(357_253..892_942).len(), 530);
     }
 
     #[test]
+    fn test_day_04_alternate() {
+        assert_eq!(code::find_candidates2(273_025..767_253).len(), 910);
+        assert_eq!(code::find_candidates2(357_253..892_942).len(), 530);
+    }
+
+    #[test]
+    #[ignore]
     fn test_day_04_part_2() {
         assert_eq!(code::find_candidates_with_one_dup(273_025..767_253).len(), 598);
+    }
+
+    #[test]
+    fn test_day_04_part_2_alternate() {
+        assert_eq!(code::find_candidates_with_one_dup2(273_025..767_253).len(), 598);
     }
 }
