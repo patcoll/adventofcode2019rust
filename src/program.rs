@@ -174,7 +174,7 @@ impl Instruction {
                 // println!("program: {:?}", program);
                 // println!("");
                 Some(self.opcode.length)
-            }
+            },
             2 => {
                 // println!("multiply values: {:?}", &self.values[0..2]);
                 let result = &self.values[0..2].iter().fold(1, |acc, n| acc * n.unwrap());
@@ -187,7 +187,7 @@ impl Instruction {
                 // println!("program: {:?}", program);
                 // println!("");
                 Some(self.opcode.length)
-            }
+            },
             99 => None,
             _ => None,
         }
