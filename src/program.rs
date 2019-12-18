@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use crate::code::Digits;
 
-const POSITION_MODE: i64 = 0;
-const IMMEDIATE_MODE: i64 = 1;
+const POSITION_MODE: u32 = 0;
+const IMMEDIATE_MODE: u32 = 1;
 
 lazy_static! {
     static ref OPCODE_LENGTHS: HashMap<i64, usize> = {
@@ -13,9 +13,6 @@ lazy_static! {
         map
     };
 }
-
-// const OPCODE_LENGTHS: [usize; 2] = [
-// ];
 
 pub fn run_program_with_inputs(
     original: &Vec<i64>,
@@ -58,42 +55,142 @@ struct Opcode {
     length: usize,
 }
 
-fn interpret_opcode(opcode: &i64) -> Opcode {
-    let digits = Digits::from(*opcode as u32);
-    let mut iterator = digits.rev();
+impl From<&i64> for Opcode {
+    fn from(opcode: &i64) -> Self {
+        let digits = Digits::from(*opcode as u32);
+        let mut iterator = digits.rev();
 
-    // Interpret opcode
-    let mut number_string = "".to_string();
-    let ones_place = iterator.next().expect("need at least one digit for an opcode");
-    let tens_place = iterator.next();
-    match tens_place {
-        Some(t) => number_string.push_str(&t.to_string()),
-        None => (),
+        // Interpret opcode
+        let mut number_string = "".to_string();
+        let ones_place = iterator.next().expect("need at least one digit for an opcode");
+        let tens_place = iterator.next();
+        match tens_place {
+            Some(t) => number_string.push_str(&t.to_string()),
+            None => (),
+        }
+        number_string.push_str(&ones_place.to_string());
+        let number = number_string.parse::<i64>().expect("need an i64");
+
+        let mut modes = iterator.collect::<Vec<_>>();
+
+        let length_opt = OPCODE_LENGTHS.get(&number);
+        assert!(length_opt.is_some(), "no length for opcode {}", number);
+        let length = length_opt.unwrap();
+
+        if modes.len() < length - 1 {
+            for _ in modes.len()..length - 1 {
+                modes.push(0);
+            }
+        }
+
+        // println!("opcode number: {:?}", number);
+        // println!("modes: {:?}", modes);
+
+        assert_eq!(modes.len(), length - 1);
+
+        Opcode {
+            number,
+            modes,
+            length: *length,
+        }
     }
-    number_string.push_str(&ones_place.to_string());
-    let number = number_string.parse::<i64>().expect("need an i64");
+}
 
-    let mut modes = iterator.collect::<Vec<_>>();
+struct Instruction {
+    opcode: Opcode,
+    indexes: Vec<Option<usize>>,
+    values: Vec<Option<i64>>,
+}
 
-    let length_opt = OPCODE_LENGTHS.get(&number);
-    assert!(length_opt.is_some(), "no length for opcode {}", number);
-    let length = length_opt.unwrap();
+impl Instruction {
+    fn new(opcode: Opcode, program: &Vec<i64>, pos: &usize) -> Instruction {
+        let mut indexes = Vec::new();
+        let mut values = Vec::new();
 
-    if modes.len() < length - 1 {
-        for _ in modes.len()..length - 1 {
-            modes.push(0);
+        // println!("opcode.number: {:?}", opcode.number);
+        // println!("opcode.modes: {:?}", opcode.modes);
+
+        for (mode_pos, mode) in opcode.modes.iter().enumerate() {
+            let value_at_pos = get_at_position(&program, *pos + mode_pos + 1);
+
+            let (index, value) = match *mode {
+                POSITION_MODE => {
+                    let index =
+                        if let Some(v) = value_at_pos {
+                            Some(v as usize)
+                        } else {
+                            None
+                        };
+
+                    // println!("index: {:?}", index);
+
+                    let value =
+                        if let Some(i) = index {
+                            if i < program.len() {
+                                Some(program[i])
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        };
+                    // println!("value: {:?}", value);
+
+                    (index, value)
+                },
+                IMMEDIATE_MODE => {
+                    (None, value_at_pos)
+                },
+                _ => break,
+            };
+
+            indexes.push(index);
+            values.push(value);
+        }
+
+        // println!("indexes: {:?}", indexes);
+        // println!("values: {:?}", values);
+        // println!("::");
+
+        Instruction {
+            opcode,
+            indexes,
+            values,
         }
     }
 
-    // println!("opcode number: {:?}", number);
-    // println!("modes: {:?}", modes);
+    // Returns the length of the instruction.
+    pub fn run(&self, program: &mut Vec<i64>) -> Option<usize> {
+        match self.opcode.number {
+            1 => {
+                // println!("add values: {:?}", &self.values[0..2]);
+                let result = &self.values[0..2].iter().fold(0, |acc, n| acc + n.unwrap());
+                // println!("result: {:?}", result);
+                let result_index = self.indexes[2].unwrap();
+                // println!("result_index: {:?}", result_index);
 
-    assert_eq!(modes.len(), length - 1);
+                program[result_index] = *result;
 
-    Opcode {
-        number,
-        modes,
-        length: *length,
+                // println!("program: {:?}", program);
+                // println!("");
+                Some(self.opcode.length)
+            }
+            2 => {
+                // println!("multiply values: {:?}", &self.values[0..2]);
+                let result = &self.values[0..2].iter().fold(1, |acc, n| acc * n.unwrap());
+                // println!("result: {:?}", result);
+                let result_index = self.indexes[2].unwrap();
+                // println!("result_index: {:?}", result_index);
+
+                program[result_index] = *result;
+
+                // println!("program: {:?}", program);
+                // println!("");
+                Some(self.opcode.length)
+            }
+            99 => None,
+            _ => None,
+        }
     }
 }
 
@@ -112,35 +209,12 @@ pub fn run_program(original: &Vec<i64>) -> Vec<i64> {
 
     loop {
         let opcode_value = get_at_position(&program, pos).unwrap();
-        opcode = interpret_opcode(&opcode_value);
+        opcode = Opcode::from(&opcode_value);
+        let instruction = Instruction::new(opcode, &program, &pos);
 
-        // NOTE: Careful, these might panic if index is out of bounds.
-        // println!("opcode: {:?}", opcode);
-        // println!("first_index: {:?}", first_index);
-        // println!("first value: {:?}", program[first_index]);
-        // println!("second_index: {:?}", second_index);
-        // println!("second value: {:?}", program[second_index]);
-        // println!("result_index: {:?}", result_index);
-
-        match opcode.number {
-            1 => {
-                let first_index = get_at_position(&program, pos + 1).unwrap() as usize;
-                let second_index = get_at_position(&program, pos + 2).unwrap() as usize;
-                let result_index = get_at_position(&program, pos + 3).unwrap() as usize;
-
-                program[result_index] = program[first_index] + program[second_index];
-                pos += opcode.length;
-            }
-            2 => {
-                let first_index = get_at_position(&program, pos + 1).unwrap() as usize;
-                let second_index = get_at_position(&program, pos + 2).unwrap() as usize;
-                let result_index = get_at_position(&program, pos + 3).unwrap() as usize;
-
-                program[result_index] = program[first_index] * program[second_index];
-                pos += opcode.length;
-            }
-            99 => break,
-            _ => break,
+        match instruction.run(&mut program) {
+            Some(length) => pos += length,
+            None => break,
         }
     }
 
@@ -150,6 +224,14 @@ pub fn run_program(original: &Vec<i64>) -> Vec<i64> {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn test_program_instruction() {
+        assert_eq!(
+            run_program(&vec![1101,100,-1,4,0]),
+            vec![1101,100,-1,4,99]
+        );
+    }
 
     #[test]
     fn test_run_program() {
