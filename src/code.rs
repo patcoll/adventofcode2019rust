@@ -133,7 +133,7 @@ pub fn find_candidates_with_one_dup(range: Range<u32>) -> Vec<u32> {
 }
 
 fn has_increasing_digits(number: &u32) -> bool {
-    let digits = int_to_digits(number);
+    let digits = Digits::from(number);
 
     if digits.position == 1 {
         return false;
@@ -141,7 +141,7 @@ fn has_increasing_digits(number: &u32) -> bool {
 
     let mut prev: Option<u32> = None;
 
-    let digits = int_to_digits(number);
+    let digits = Digits::from(number);
 
     digits.fold(true, |acc, n| {
         let result = acc
@@ -173,7 +173,7 @@ fn is_candidate_with_one_dup2(n: &u32) -> bool {
 fn has_adjacent_dup(n: &u32) -> bool {
     let mut prev: Option<u32> = None;
 
-    let digits = int_to_digits(n);
+    let digits = Digits::from(n);
 
     let has_adjacent_dup = digits.fold(false, |acc, n| {
         let result = acc
@@ -198,7 +198,7 @@ fn has_adjacent_dup(n: &u32) -> bool {
  * https://www.reddit.com/r/adventofcode/comments/e5uatc/the_two_adjacent_matching_digits_are_not_part_of/
  */
 fn has_one_adjacent_dup(n: &u32) -> bool {
-    let digits = int_to_digits(n);
+    let digits = Digits::from(n);
 
     let mut counts: HashMap<u32, u32> = HashMap::new();
 
@@ -211,38 +211,6 @@ fn has_one_adjacent_dup(n: &u32) -> bool {
         .into_iter()
         .any(|(_, count)| count == 2)
 }
-
-fn int_to_digits(input: &u32) -> Digits {
-    let vec = number_to_vec(*input);
-    let length = vec.len();
-
-    Digits {
-        vec: number_to_vec(*input),
-        position: 0,
-        rev_position: length,
-    }
-}
-
-fn number_to_vec(n: u32) -> Vec<u32> {
-    let mut digits = Vec::new();
-    let mut n = n;
-    while n > 9 {
-        digits.push(n % 10);
-        n = n / 10;
-    }
-    digits.push(n);
-    digits.reverse();
-    digits
-}
-
-
-
-
-
-
-
-
-
 
 #[derive(Debug, Default)]
 pub struct Digits {
@@ -259,11 +227,31 @@ impl From<u32> for Digits {
 
 impl From<&u32> for Digits {
     fn from(num: &u32) -> Self {
-        int_to_digits(num)
+        let vec = Self::number_to_vec(*num);
+        let length = vec.len();
+
+        Digits {
+            vec,
+            rev_position: length,
+            ..Default::default()
+        }
     }
 }
 
 impl Digits {
+    fn number_to_vec(n: u32) -> Vec<u32> {
+        let mut digits = Vec::new();
+        let mut n = n;
+        while n > 9 {
+            digits.push(n % 10);
+            n = n / 10;
+        }
+        digits.push(n);
+        digits.reverse();
+        digits
+    }
+
+
     pub fn len(&self) -> usize {
         self.vec.len()
     }
@@ -274,15 +262,8 @@ impl Iterator for Digits {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.position < self.vec.len() {
-            // println!("self.num: {:?}", self.num);
-            // println!("self.position: {:?}", self.position);
             let result = self.vec[self.position];
             self.position += 1;
-            // self.num %= self.position;
-            // println!("self.num: {:?}", self.num);
-            // self.position /= 10;
-            // println!("result: {:?}", result);
-            // println!("");
             Some(result)
         } else {
             None
@@ -291,8 +272,6 @@ impl Iterator for Digits {
 }
 
 impl DoubleEndedIterator for Digits {
-    // type Item = u32;
-
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.rev_position > 0 {
             let result = self.vec[self.rev_position - 1];
@@ -303,16 +282,6 @@ impl DoubleEndedIterator for Digits {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
 
 #[cfg(test)]
 mod test {
