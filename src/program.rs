@@ -115,92 +115,7 @@ struct Instruction {
     routine: Box<Routine>,
     indexes: Vec<Option<usize>>,
     values: Vec<Option<i64>>,
-    evaluated_values: Vec<Option<i64>>,
     pos: usize,
-}
-
-impl Instruction {
-    fn new(opcode: Opcode, routine: Box<Routine>) -> Instruction {
-        Instruction {
-            opcode,
-            routine,
-            indexes: vec![],
-            values: vec![],
-            evaluated_values: vec![],
-            pos: 0,
-        }
-    }
-
-    pub fn init(&mut self, program: &Vec<i64>, pos: &usize) -> &Instruction {
-        self.pos = pos.clone();
-
-        let mut indexes = Vec::new();
-        let mut values = Vec::new();
-        let mut evaluated_values = Vec::new();
-
-        println!("opcode.number: {:?}", self.opcode.number);
-        println!("opcode.modes: {:?}", self.opcode.modes);
-
-        let mut index: Option<usize>;
-        let mut value: Option<i64>;
-        let mut evaluated_value: Option<i64>;
-
-        for (mode_pos, mode) in self.opcode.modes.iter().enumerate() {
-            let value_at_pos = get_at_position(&program, self.pos + mode_pos + 1);
-
-            let (index, value, evaluated_value) = match *mode {
-                POSITION_MODE => {
-                    let index =
-                        if let Some(v) = value_at_pos {
-                            Some(v as usize)
-                        } else {
-                            None
-                        };
-
-                    // println!("index: {:?}", index);
-
-                    let value: Option<i64>;
-                    let evaluated_value: Option<i64>;
-
-                    if let Some(i) = index {
-                        if i < program.len() {
-                            value = Some(program[i]);
-                            evaluated_value = Some(i as i64);
-                        } else {
-                            value = None;
-                            evaluated_value = None;
-                        }
-                    } else {
-                        value = None;
-                        evaluated_value = None;
-                    }
-                    // println!("value: {:?}", value);
-                    // let evaluated_value = i as i64;
-
-                    (index, value, evaluated_value)
-                },
-                IMMEDIATE_MODE => {
-                    (None, value_at_pos, value_at_pos)
-                },
-                _ => Default::default(),
-            };
-
-            indexes.push(index);
-            values.push(value);
-            evaluated_values.push(evaluated_value);
-        }
-
-        println!("indexes: {:?}", indexes);
-        println!("values: {:?}", values);
-        println!("evaluated_values: {:?}", evaluated_values);
-        println!("::");
-
-        self.indexes = indexes;
-        self.values = values;
-        self.evaluated_values = evaluated_values;
-
-        self
-    }
 }
 
 impl Runnable for Instruction {
@@ -341,6 +256,75 @@ impl Runnable for Instruction {
     }
 }
 
+impl Instruction {
+    fn new(opcode: Opcode, routine: Box<Routine>) -> Instruction {
+        Instruction {
+            opcode,
+            routine,
+            indexes: vec![],
+            values: vec![],
+            pos: 0,
+        }
+    }
+
+    pub fn init(&mut self, program: &Vec<i64>, pos: &usize) -> &Instruction {
+        self.pos = pos.clone();
+
+        let mut indexes = Vec::new();
+        let mut values = Vec::new();
+
+        println!("opcode.number: {:?}", self.opcode.number);
+        println!("opcode.modes: {:?}", self.opcode.modes);
+
+        for (mode_pos, mode) in self.opcode.modes.iter().enumerate() {
+            let value_at_pos = get_at_position(&program, self.pos + mode_pos + 1);
+
+            let (index, value) = match *mode {
+                POSITION_MODE => {
+                    let index =
+                        if let Some(v) = value_at_pos {
+                            Some(v as usize)
+                        } else {
+                            None
+                        };
+
+                    // println!("index: {:?}", index);
+
+                    let value =
+                        if let Some(i) = index {
+                            if i < program.len() {
+                                Some(program[i])
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        };
+                    // println!("value: {:?}", value);
+
+                    (index, value)
+                },
+                IMMEDIATE_MODE => {
+                    (None, value_at_pos)
+                },
+                _ => break,
+            };
+
+            indexes.push(index);
+            values.push(value);
+        }
+
+        println!("indexes: {:?}", indexes);
+        println!("values: {:?}", values);
+        println!("::");
+
+        self.indexes = indexes;
+        self.values = values;
+
+        self
+    }
+
+}
 
 fn get_at_position(program: &Vec<i64>, pos: usize) -> Option<i64> {
     match pos {
