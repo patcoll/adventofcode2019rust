@@ -9,6 +9,12 @@ lazy_static! {
         let mut map = HashMap::new();
         map.insert(1, 4);
         map.insert(2, 4);
+        map.insert(3, 2);
+        map.insert(4, 2);
+        map.insert(5, 3);
+        map.insert(6, 3);
+        map.insert(7, 4);
+        map.insert(8, 4);
         map.insert(99, 1);
         map
     };
@@ -57,6 +63,7 @@ struct Opcode {
 
 impl From<&i64> for Opcode {
     fn from(opcode: &i64) -> Self {
+        // println!("opcode: {:?}", opcode);
         let digits = Digits::from(*opcode as u32);
         let mut iterator = digits.rev();
 
@@ -96,24 +103,52 @@ impl From<&i64> for Opcode {
     }
 }
 
+type Routine = dyn FnMut() -> bool;
+
+trait Runnable {
+    fn run(&mut self, program: &mut Vec<i64>, input: Option<i64>) -> (Option<usize>, Option<i64>);
+}
+
+// #[derive(Default)]
 struct Instruction {
     opcode: Opcode,
+    routine: Box<Routine>,
     indexes: Vec<Option<usize>>,
     values: Vec<Option<i64>>,
+    evaluated_values: Vec<Option<i64>>,
+    pos: usize,
 }
 
 impl Instruction {
-    fn new(opcode: Opcode, program: &Vec<i64>, pos: &usize) -> Instruction {
+    fn new(opcode: Opcode, routine: Box<Routine>) -> Instruction {
+        Instruction {
+            opcode,
+            routine,
+            indexes: vec![],
+            values: vec![],
+            evaluated_values: vec![],
+            pos: 0,
+        }
+    }
+
+    pub fn init(&mut self, program: &Vec<i64>, pos: &usize) -> &Instruction {
+        self.pos = pos.clone();
+
         let mut indexes = Vec::new();
         let mut values = Vec::new();
+        let mut evaluated_values = Vec::new();
 
-        // println!("opcode.number: {:?}", opcode.number);
-        // println!("opcode.modes: {:?}", opcode.modes);
+        println!("opcode.number: {:?}", self.opcode.number);
+        println!("opcode.modes: {:?}", self.opcode.modes);
 
-        for (mode_pos, mode) in opcode.modes.iter().enumerate() {
-            let value_at_pos = get_at_position(&program, *pos + mode_pos + 1);
+        let mut index: Option<usize>;
+        let mut value: Option<i64>;
+        let mut evaluated_value: Option<i64>;
 
-            let (index, value) = match *mode {
+        for (mode_pos, mode) in self.opcode.modes.iter().enumerate() {
+            let value_at_pos = get_at_position(&program, self.pos + mode_pos + 1);
+
+            let (index, value, evaluated_value) = match *mode {
                 POSITION_MODE => {
                     let index =
                         if let Some(v) = value_at_pos {
@@ -124,56 +159,66 @@ impl Instruction {
 
                     // println!("index: {:?}", index);
 
-                    let value =
-                        if let Some(i) = index {
-                            if i < program.len() {
-                                Some(program[i])
-                            } else {
-                                None
-                            }
-                        } else {
-                            None
-                        };
-                    // println!("value: {:?}", value);
+                    let value: Option<i64>;
+                    let evaluated_value: Option<i64>;
 
-                    (index, value)
+                    if let Some(i) = index {
+                        if i < program.len() {
+                            value = Some(program[i]);
+                            evaluated_value = Some(i as i64);
+                        } else {
+                            value = None;
+                            evaluated_value = None;
+                        }
+                    } else {
+                        value = None;
+                        evaluated_value = None;
+                    }
+                    // println!("value: {:?}", value);
+                    // let evaluated_value = i as i64;
+
+                    (index, value, evaluated_value)
                 },
                 IMMEDIATE_MODE => {
-                    (None, value_at_pos)
+                    (None, value_at_pos, value_at_pos)
                 },
-                _ => break,
+                _ => Default::default(),
             };
 
             indexes.push(index);
             values.push(value);
+            evaluated_values.push(evaluated_value);
         }
 
-        // println!("indexes: {:?}", indexes);
-        // println!("values: {:?}", values);
-        // println!("::");
+        println!("indexes: {:?}", indexes);
+        println!("values: {:?}", values);
+        println!("evaluated_values: {:?}", evaluated_values);
+        println!("::");
 
-        Instruction {
-            opcode,
-            indexes,
-            values,
-        }
+        self.indexes = indexes;
+        self.values = values;
+        self.evaluated_values = evaluated_values;
+
+        self
     }
+}
 
-    // Returns the length of the instruction.
-    pub fn run(&self, program: &mut Vec<i64>) -> Option<usize> {
+impl Runnable for Instruction {
+    fn run(&mut self, program: &mut Vec<i64>, input: Option<i64>) -> (Option<usize>, Option<i64>) {
         match self.opcode.number {
             1 => {
-                // println!("add values: {:?}", &self.values[0..2]);
+                println!("self: {:?}", self.values);
+                println!("add values: {:?}", &self.values[0..2]);
                 let result = &self.values[0..2].iter().fold(0, |acc, n| acc + n.unwrap());
-                // println!("result: {:?}", result);
+                println!("result: {:?}", result);
                 let result_index = self.indexes[2].unwrap();
-                // println!("result_index: {:?}", result_index);
+                println!("result_index: {:?}", result_index);
 
                 program[result_index] = *result;
 
-                // println!("program: {:?}", program);
-                // println!("");
-                Some(self.opcode.length)
+                println!("program: {:?}", program);
+                println!("");
+                (Some(self.pos + self.opcode.length), None)
             },
             2 => {
                 // println!("multiply values: {:?}", &self.values[0..2]);
@@ -186,13 +231,116 @@ impl Instruction {
 
                 // println!("program: {:?}", program);
                 // println!("");
-                Some(self.opcode.length)
+                (Some(self.pos + self.opcode.length), None)
             },
-            99 => None,
-            _ => None,
+            3 => {
+                let result_index = self.indexes[0].unwrap();
+                program[result_index] = input.unwrap();
+
+                println!("program: {:?}", program);
+                println!("");
+
+                (Some(self.pos + self.opcode.length), None)
+            },
+            4 => {
+                if let Some(out) = self.values[0] {
+                    println!("[program::out]: {}", out);
+                    (Some(self.pos + self.opcode.length), Some(out))
+                } else {
+                    panic!("No output from output instruction");
+                }
+            },
+            // jump-if-true
+            5 => {
+                match self.values.as_slice() {
+                    [Some(param), Some(value)] if *param != 0 => {
+                        (Some(*value as usize), None)
+                    },
+                    _ => (Some(self.pos + self.opcode.length), None),
+                }
+            },
+            // jump-if-false
+            6 => {
+                match self.values.as_slice() {
+                    [Some(param), Some(value)] if *param == 0 => {
+                        (Some(*value as usize), None)
+                    },
+                    _ => (Some(self.pos + self.opcode.length), None),
+                }
+            },
+            // less than
+            7 => {
+                // let values_as_slice = self.values.as_slice();
+
+                match self.indexes.as_slice() {
+                    [_, _, Some(store_pos)] => {
+                        program[(*store_pos) as usize] =
+                            match self.values.as_slice() {
+                                [Some(first), Some(second), _] if *first < *second => {
+                                    1
+                                },
+                                _ => 0,
+                            };
+                    },
+                    _ => (),
+                }
+
+                (Some(self.pos + self.opcode.length), None)
+            },
+            // equals
+            8 => {
+                // let values_as_slice = self.values.as_slice();
+                // println!("values_as_slice: {:?}", values_as_slice);
+
+                match self.indexes.as_slice() {
+                    [_, _, Some(store_pos)] => {
+                        // println!("store_pos: {:?}", store_pos);
+                        program[(*store_pos) as usize] =
+                            match self.values.as_slice() {
+                                [Some(first), Some(second), _] if *first == *second => {
+                                    // println!("1");
+                                    1
+                                },
+                                _ => {
+                                    // println!("0");
+                                    0
+                                },
+                            };
+                    },
+                    _ => (),
+                }
+
+                // println!("program: {:?}", program);
+                // println!("");
+
+                (Some(self.pos + self.opcode.length), None)
+            },
+            // 6 => {
+            //     let new_pos =
+            //         let Some(param) = self.values[0];
+            //         if param == 0 {
+            //             self.values[1].expect("expected second parameter for jump-if-true");
+            //         } else {
+            //             Some(*pos + self.opcode.length)
+            //         }
+            //     (new_pos, None)
+            // },
+            // 7 => {
+            //     let new_pos =
+            //         let Some(param) = self.values[0];
+            //         if param == 0 {
+            //             self.values[1].expect("expected second parameter for jump-if-true");
+            //         } else {
+            //             Some(*pos + self.opcode.length)
+            //         }
+            //     (new_pos, None)
+            // },
+            99 => Default::default(),
+            _ => Default::default(),
         }
     }
 }
+
 
 fn get_at_position(program: &Vec<i64>, pos: usize) -> Option<i64> {
     match pos {
@@ -202,23 +350,39 @@ fn get_at_position(program: &Vec<i64>, pos: usize) -> Option<i64> {
 }
 
 pub fn run_program(original: &Vec<i64>) -> Vec<i64> {
+    let (program, _) = run_program_with_input_instruction(original, None);
+    program
+}
+
+pub fn run_program_with_input_instruction(original: &Vec<i64>, input: Option<i64>) -> (Vec<i64>, Option<i64>) {
     let mut program = original.clone();
 
     let mut pos = 0;
     let mut opcode: Opcode;
+    let mut output = None;
 
     loop {
         let opcode_value = get_at_position(&program, pos).unwrap();
         opcode = Opcode::from(&opcode_value);
-        let instruction = Instruction::new(opcode, &program, &pos);
+        // println!("opcode: {:?}", opcode);
+        let mut instruction = Instruction::new(opcode, Box::new(|| true));
+        instruction.init(&program, &pos);
+        // println!("instruction: {:?}", instruction);
 
-        match instruction.run(&mut program) {
-            Some(length) => pos += length,
-            None => break,
+        // hard code input for now
+        match instruction.run(&mut program, input) {
+            (Some(new_pos), optional_output) => {
+                if let Some(o) = optional_output {
+                    output = Some(o);
+                }
+                pos = new_pos;
+            },
+            (None, _) => break,
         }
     }
 
-    program
+    // println!("output: {:?}", output);
+    (program, output)
 }
 
 #[cfg(test)]
@@ -230,6 +394,144 @@ mod test {
         assert_eq!(
             run_program(&vec![1101,100,-1,4,0]),
             vec![1101,100,-1,4,99]
+        );
+    }
+
+    #[test]
+    fn test_equals() {
+        // Consider whether the input is equal to 8; output 1 (if it is) or 0
+        // (if it is not).
+
+        // position mode
+        let program = vec![3,9,8,9,10,9,4,9,99,-1,8];
+        // immediate mode
+        let i_program = vec![3,9,8,9,10,9,4,9,99,-1,8];
+
+        assert_eq!(
+            run_program_with_input_instruction(&program, Some(8)).1.unwrap(),
+            1
+        );
+
+        assert_eq!(
+            run_program_with_input_instruction(&i_program, Some(8)).1.unwrap(),
+            1
+        );
+
+        (0..20)
+            .filter(|n| *n != 8)
+            .for_each(|n| {
+                assert_eq!(run_program_with_input_instruction(&program, Some(n)).1.unwrap(),
+                    0
+                );
+
+                assert_eq!(run_program_with_input_instruction(&i_program, Some(n)).1.unwrap(),
+                    0
+                );
+            });
+    }
+
+    #[test]
+    fn test_less_than() {
+        // Consider whether the input is less than 8; output 1 (if it is) or 0
+        // (if it is not).
+        //
+        // position mode
+        let program = vec![3,9,7,9,10,9,4,9,99,-1,8];
+        // immediate mode
+        let i_program = vec![3,3,1107,-1,8,3,4,3,99];
+
+        assert_eq!(
+            run_program_with_input_instruction(&program, Some(7)).1.unwrap(),
+            1
+        );
+
+        assert_eq!(
+            run_program_with_input_instruction(&i_program, Some(7)).1.unwrap(),
+            1
+        );
+
+        (0..20)
+            .filter(|n| *n >= 8)
+            .for_each(|n| {
+                assert_eq!(run_program_with_input_instruction(&program, Some(n)).1.unwrap(),
+                    0
+                );
+
+                assert_eq!(run_program_with_input_instruction(&i_program, Some(n)).1.unwrap(),
+                    0
+                );
+            });
+    }
+
+    #[test]
+    fn test_jump_if_true() {
+        let program = vec![3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9];
+        let i_program = vec![3,3,1105,-1,9,1101,0,0,12,4,12,99,1];
+
+        assert_eq!(
+            run_program_with_input_instruction(&program, Some(0)).1.unwrap(),
+            0
+        );
+
+        assert_eq!(
+            run_program_with_input_instruction(&i_program, Some(0)).1.unwrap(),
+            0
+        );
+
+        assert_eq!(
+            run_program_with_input_instruction(&program, Some(1)).1.unwrap(),
+            1
+        );
+
+        assert_eq!(
+            run_program_with_input_instruction(&i_program, Some(1)).1.unwrap(),
+            1
+        );
+    }
+
+    #[test]
+    fn test_jump_if_false() {
+        let program = vec![3,12,5,12,15,1,13,14,13,4,13,99,-1,0,1,9];
+        let i_program = vec![3,3,1106,-1,9,1101,0,0,12,4,12,99,1];
+
+        assert_eq!(
+            run_program_with_input_instruction(&program, Some(0)).1.unwrap(),
+            1
+        );
+
+        assert_eq!(
+            run_program_with_input_instruction(&i_program, Some(0)).1.unwrap(),
+            1
+        );
+
+        assert_eq!(
+            run_program_with_input_instruction(&program, Some(1)).1.unwrap(),
+            0
+        );
+
+        assert_eq!(
+            run_program_with_input_instruction(&i_program, Some(1)).1.unwrap(),
+            0
+        );
+    }
+
+    #[test]
+    fn test_new_instructions_integration() {
+        let program = vec![3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99];
+
+        assert_eq!(
+            run_program_with_input_instruction(&program, Some(7)).1.unwrap(),
+            999
+        );
+
+        assert_eq!(
+            run_program_with_input_instruction(&program, Some(8)).1.unwrap(),
+            1000
+        );
+
+        assert_eq!(
+            run_program_with_input_instruction(&program, Some(9)).1.unwrap(),
+            1001
         );
     }
 

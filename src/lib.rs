@@ -170,4 +170,30 @@ mod test {
     fn test_day_04_part_2_alternate() {
         assert_eq!(code::find_candidates_with_one_dup2(273_025..767_253).len(), 598);
     }
+
+    #[test]
+    fn test_day_05() {
+        let program: Vec<i64> = include_str!("../data/d05.txt")
+            .trim()
+            .split(",")
+            .map(|node| node.parse::<i64>().unwrap())
+            .collect();
+
+        if let (_, Some(out)) = program::run_program_with_input_instruction(&program, Some(1)) {
+            assert_eq!(out, 16574641);
+        }
+    }
+
+    #[test]
+    fn test_day_05_part_2() {
+        let program: Vec<i64> = include_str!("../data/d05.txt")
+            .trim()
+            .split(",")
+            .map(|node| node.parse::<i64>().unwrap())
+            .collect();
+
+        if let (_, Some(out)) = program::run_program_with_input_instruction(&program, Some(5)) {
+            assert_eq!(out, 15163975);
+        }
+    }
 }
