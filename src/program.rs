@@ -122,17 +122,17 @@ impl Runnable for Instruction {
     fn run(&mut self, program: &mut Vec<i64>, input: Option<i64>) -> (Option<usize>, Option<i64>) {
         match self.opcode.number {
             1 => {
-                println!("self: {:?}", self.values);
-                println!("add values: {:?}", &self.values[0..2]);
+                // println!("self: {:?}", self.values);
+                // println!("add values: {:?}", &self.values[0..2]);
                 let result = &self.values[0..2].iter().fold(0, |acc, n| acc + n.unwrap());
-                println!("result: {:?}", result);
+                // println!("result: {:?}", result);
                 let result_index = self.indexes[2].unwrap();
-                println!("result_index: {:?}", result_index);
+                // println!("result_index: {:?}", result_index);
 
                 program[result_index] = *result;
 
-                println!("program: {:?}", program);
-                println!("");
+                // println!("program: {:?}", program);
+                // println!("");
                 (Some(self.pos + self.opcode.length), None)
             },
             2 => {
@@ -152,8 +152,8 @@ impl Runnable for Instruction {
                 let result_index = self.indexes[0].unwrap();
                 program[result_index] = input.unwrap();
 
-                println!("program: {:?}", program);
-                println!("");
+                // println!("program: {:?}", program);
+                // println!("");
 
                 (Some(self.pos + self.opcode.length), None)
             },
@@ -273,8 +273,8 @@ impl Instruction {
         let mut indexes = Vec::new();
         let mut values = Vec::new();
 
-        println!("opcode.number: {:?}", self.opcode.number);
-        println!("opcode.modes: {:?}", self.opcode.modes);
+        // println!("opcode.number: {:?}", self.opcode.number);
+        // println!("opcode.modes: {:?}", self.opcode.modes);
 
         for (mode_pos, mode) in self.opcode.modes.iter().enumerate() {
             let value_at_pos = get_at_position(&program, self.pos + mode_pos + 1);
@@ -314,9 +314,9 @@ impl Instruction {
             values.push(value);
         }
 
-        println!("indexes: {:?}", indexes);
-        println!("values: {:?}", values);
-        println!("::");
+        // println!("indexes: {:?}", indexes);
+        // println!("values: {:?}", values);
+        // println!("::");
 
         self.indexes = indexes;
         self.values = values;
