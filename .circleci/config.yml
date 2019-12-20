@@ -16,6 +16,7 @@ jobs:
       - rust/checkout_with_submodules
       - rust/update_toolchain
       - rust/test
+      - run: 'cargo test --all<<#parameters.release>> --release<</parameters.release>> --ignored'
 workflows:
   build:
     jobs:
