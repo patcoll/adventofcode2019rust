@@ -63,10 +63,12 @@ impl Universe {
         }
 
         self.objects
-            .clone()
+            .iter()
+            .map(|object| object.0.as_str())
+            .collect::<Vec<_>>()
             .into_par_iter()
-            .map(|object| {
-                let results = bellman_ford(&graph, object.0.as_str());
+            .map(|object_name| {
+                let results = bellman_ford(&graph, object_name);
 
                 match &results {
                     Ok((_, b)) => b.iter().cloned().filter(|x| x.is_some()).count(),
