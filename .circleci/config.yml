@@ -4,8 +4,11 @@ orbs:
 workflows:
   build:
     jobs:
-      - rust/check
-      - rust/clippy
-      - rust/format
-      - rust/test
-
+      - check:
+          steps:
+            - rust/check
+            - rust/clippy
+            - rust/format
+      - test:
+          steps:
+            - rust/test
