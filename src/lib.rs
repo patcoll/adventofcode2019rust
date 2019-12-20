@@ -13,7 +13,7 @@ mod test {
     use super::*;
 
     use grid::{Coordinate, Grid, Route};
-    use orbits::{Universe};
+    use orbits::Universe;
 
     #[test]
     fn test_day_01() {
@@ -165,12 +165,18 @@ mod test {
     #[test]
     #[ignore]
     fn test_day_04_part_2() {
-        assert_eq!(code::find_candidates_with_one_dup(273_025..767_253).len(), 598);
+        assert_eq!(
+            code::find_candidates_with_one_dup(273_025..767_253).len(),
+            598
+        );
     }
 
     #[test]
     fn test_day_04_part_2_alternate() {
-        assert_eq!(code::find_candidates_with_one_dup2(273_025..767_253).len(), 598);
+        assert_eq!(
+            code::find_candidates_with_one_dup2(273_025..767_253).len(),
+            598
+        );
     }
 
     #[test]
@@ -181,7 +187,9 @@ mod test {
             .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
-        if let (_, Some(out)) = program::run_program_with_input_instruction(&program, Some(1)) {
+        if let (_, Some(out)) =
+            program::run_program_with_input_instruction(&program, Some(1))
+        {
             assert_eq!(out, 16574641);
         }
     }
@@ -194,7 +202,9 @@ mod test {
             .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
-        if let (_, Some(out)) = program::run_program_with_input_instruction(&program, Some(5)) {
+        if let (_, Some(out)) =
+            program::run_program_with_input_instruction(&program, Some(5))
+        {
             assert_eq!(out, 15163975);
         }
     }

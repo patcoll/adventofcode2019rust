@@ -1,6 +1,6 @@
-use std::ops::Range;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::ops::Range;
 
 use rayon::prelude::*;
 
@@ -8,10 +8,7 @@ use rayon::prelude::*;
  * This function is not efficient, but it is made better by using Rayon parallel filter.
  */
 pub fn find_candidates(range: Range<u32>) -> Vec<u32> {
-    range
-        .into_par_iter()
-        .filter(|n| is_candidate(n))
-        .collect()
+    range.into_par_iter().filter(|n| is_candidate(n)).collect()
 }
 
 fn add_digit(n: &Vec<u32>) -> Vec<u32> {
@@ -74,12 +71,13 @@ pub fn find_candidates2(range: Range<u32>) -> Vec<u32> {
 
     // let generate_start_collected = (1..=9).collect::<Vec<_>>();
     // println!("generate_start_collected: {:?}", generate_start_collected);
-    let generate_start =
-        if start_length == end_length {
-            (start_vec[0]..=end_vec[0])
-        } else {
-            (1..=9)
-        }.map(|n| vec![n]).collect::<Vec<_>>();
+    let generate_start = if start_length == end_length {
+        (start_vec[0]..=end_vec[0])
+    } else {
+        (1..=9)
+    }
+    .map(|n| vec![n])
+    .collect::<Vec<_>>();
     // println!("generate_start: {:?}", generate_start);
 
     let lengths = (start_length..=end_length).collect::<HashSet<_>>();
@@ -207,9 +205,7 @@ fn has_one_adjacent_dup(n: &u32) -> bool {
         counts.insert(n, val);
     }
 
-    counts
-        .into_iter()
-        .any(|(_, count)| count == 2)
+    counts.into_iter().any(|(_, count)| count == 2)
 }
 
 #[derive(Debug, Default)]
@@ -250,7 +246,6 @@ impl Digits {
         digits.reverse();
         digits
     }
-
 
     pub fn len(&self) -> usize {
         self.vec.len()

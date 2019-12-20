@@ -1,7 +1,7 @@
-use std::collections::HashSet;
-use rayon::prelude::*;
-use petgraph::prelude::*;
 use petgraph::algo::bellman_ford;
+use petgraph::prelude::*;
+use rayon::prelude::*;
+use std::collections::HashSet;
 
 #[derive(Debug)]
 pub struct Universe {
@@ -53,7 +53,7 @@ impl Universe {
     pub fn count_indirect_orbits(&self) -> usize {
         let mut graph = GraphMap::<&str, f64, Directed>::with_capacity(
             self.count_objects(),
-            self.count_direct_orbits()
+            self.count_direct_orbits(),
         );
 
         for orbit in &self.orbits {
@@ -62,19 +62,15 @@ impl Universe {
             graph.add_edge(orbited_id, orbiting_id, Default::default());
         }
 
-        let count = self.objects.clone()
+        let count = self
+            .objects
+            .clone()
             .into_par_iter()
             .map(|object| {
                 let results = bellman_ford(&graph, object.0.as_str());
 
                 match &results {
-                    Ok((_, b)) => {
-                        b
-                            .iter()
-                            .cloned()
-                            .filter(|x| x.is_some())
-                            .count()
-                    },
+                    Ok((_, b)) => b.iter().cloned().filter(|x| x.is_some()).count(),
                     Err(_) => 0,
                 }
             })
@@ -94,7 +90,7 @@ impl From<&str> for Object {
 
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
 pub struct Orbit {
-    pub orbited: Object, // The planet that is being orbited.
+    pub orbited: Object,  // The planet that is being orbited.
     pub orbiting: Object, // The planet that is orbiting.
 }
 
@@ -104,9 +100,14 @@ type ParsedOrbit = (HashSet<Object>, Orbit);
 impl Orbit {
     fn new(s: &str) -> ParsedOrbit {
         let split = s.split(")");
-        let objects = split.map(|name| Object(name.to_string())).collect::<Vec<_>>();
+        let objects = split
+            .map(|name| Object(name.to_string()))
+            .collect::<Vec<_>>();
         // println!("objects: {:?}", objects);
-        let orbit = Orbit { orbited: objects[0].clone(), orbiting: objects[1].clone() };
+        let orbit = Orbit {
+            orbited: objects[0].clone(),
+            orbiting: objects[1].clone(),
+        };
         (objects.into_iter().collect::<HashSet<_>>(), orbit)
     }
 }
@@ -122,7 +123,10 @@ mod test {
         objects.insert(Object::from("B"));
 
         // let orbits = HashSet::new();
-        let orbit = Orbit { orbited: Object::from("A"), orbiting: Object::from("B") };
+        let orbit = Orbit {
+            orbited: Object::from("A"),
+            orbiting: Object::from("B"),
+        };
 
         assert_eq!(Orbit::new("A)B"), (objects, orbit));
     }
