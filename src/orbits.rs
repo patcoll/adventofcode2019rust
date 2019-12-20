@@ -62,7 +62,7 @@ impl Universe {
             graph.add_edge(orbited_id, orbiting_id, Default::default());
         }
 
-        let count = self
+        self
             .objects
             .clone()
             .into_par_iter()
@@ -74,8 +74,7 @@ impl Universe {
                     Err(_) => 0,
                 }
             })
-            .sum();
-        count
+            .sum()
     }
 }
 
@@ -99,7 +98,7 @@ type ParsedOrbit = (HashSet<Object>, Orbit);
 
 impl Orbit {
     fn new(s: &str) -> ParsedOrbit {
-        let split = s.split(")");
+        let split = s.split(')');
         let objects = split
             .map(|name| Object(name.to_string()))
             .collect::<Vec<_>>();

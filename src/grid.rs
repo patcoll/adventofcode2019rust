@@ -44,7 +44,7 @@ impl From<&str> for Path {
 
         let mut steps: usize = 0;
 
-        if text.len() > 0 {
+        if !text.is_empty() {
             steps = match (&text[1..]).parse::<usize>() {
                 Ok(num) => num,
                 _ => 0,
@@ -95,12 +95,12 @@ impl From<&str> for Route {
     fn from(text: &str) -> Self {
         let paths_text: Vec<&str> = text
             .trim()
-            .split(",")
+            .split(',')
             .map(|path_text| path_text.trim())
-            .filter(|path_text| path_text.len() > 0)
+            .filter(|path_text| !path_text.is_empty())
             .collect();
 
-        if paths_text.len() == 0 {
+        if paths_text.is_empty() {
             return Route::default();
         }
 
@@ -235,7 +235,7 @@ impl Grid {
         let intersection = self.intersection();
         let intersection_vec = &intersection.into_iter().collect::<Vec<Coordinate>>();
 
-        let min_path_length = intersection_vec
+        intersection_vec
             .iter()
             .map(|&coordinate| {
                 // println!("coordinate: {:?}", coordinate);
@@ -251,11 +251,7 @@ impl Grid {
                     .sum::<usize>()
             })
             .min()
-            .expect("Expect a usize path length");
-
-        // println!("min_path_length: {:?}", min_path_length);
-
-        min_path_length
+            .expect("Expect a usize path length")
     }
 }
 

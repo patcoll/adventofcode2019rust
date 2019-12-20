@@ -6,7 +6,6 @@ pub mod program;
 
 #[macro_use]
 extern crate lazy_static;
-extern crate rayon;
 
 #[cfg(test)]
 mod test {
@@ -24,7 +23,7 @@ mod test {
             .map(|mass| fuel::fuel_needed_for_mass(mass))
             .sum();
 
-        assert_eq!(total, 3318195);
+        assert_eq!(total, 3_318_195);
     }
 
     #[test]
@@ -36,7 +35,7 @@ mod test {
             .map(|mass| fuel::total_fuel_needed_for_mass(mass))
             .sum();
 
-        assert_eq!(total, 4974428);
+        assert_eq!(total, 4_974_428);
     }
 
     #[test]
@@ -52,7 +51,7 @@ mod test {
 
         let result = program::run_program(&program);
 
-        assert_eq!(result[0], 9706670);
+        assert_eq!(result[0], 9_706_670);
     }
 
     #[test]
@@ -65,7 +64,7 @@ mod test {
 
         let result = program::run_program_with_inputs(&program, 12, 2);
 
-        assert_eq!(result[0], 9706670);
+        assert_eq!(result[0], 9_706_670);
     }
 
     #[test]
@@ -76,7 +75,7 @@ mod test {
             .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
-        let (noun, verb) = program::run_program_to_get_output(&program, 19690720);
+        let (noun, verb) = program::run_program_to_get_output(&program, 19_690_720);
 
         assert_eq!(noun, 25);
         assert_eq!(verb, 52);
@@ -152,21 +151,21 @@ mod test {
     #[test]
     #[ignore]
     fn test_day_04() {
-        assert_eq!(code::find_candidates(273_025..767_253).len(), 910);
-        assert_eq!(code::find_candidates(357_253..892_942).len(), 530);
+        assert_eq!(code::find_candidates(273_025..=767_253).len(), 910);
+        assert_eq!(code::find_candidates(357_253..=892_942).len(), 530);
     }
 
     #[test]
     fn test_day_04_alternate() {
-        assert_eq!(code::find_candidates2(273_025..767_253).len(), 910);
-        assert_eq!(code::find_candidates2(357_253..892_942).len(), 530);
+        assert_eq!(code::find_candidates2(273_025..=767_253).len(), 910);
+        assert_eq!(code::find_candidates2(357_253..=892_942).len(), 530);
     }
 
     #[test]
     #[ignore]
     fn test_day_04_part_2() {
         assert_eq!(
-            code::find_candidates_with_one_dup(273_025..767_253).len(),
+            code::find_candidates_with_one_dup(273_025..=767_253).len(),
             598
         );
     }
@@ -174,7 +173,7 @@ mod test {
     #[test]
     fn test_day_04_part_2_alternate() {
         assert_eq!(
-            code::find_candidates_with_one_dup2(273_025..767_253).len(),
+            code::find_candidates_with_one_dup2(273_025..=767_253).len(),
             598
         );
     }
@@ -190,7 +189,7 @@ mod test {
         if let (_, Some(out)) =
             program::run_program_with_input_instruction(&program, Some(1))
         {
-            assert_eq!(out, 16574641);
+            assert_eq!(out, 16_574_641);
         }
     }
 
@@ -205,7 +204,7 @@ mod test {
         if let (_, Some(out)) =
             program::run_program_with_input_instruction(&program, Some(5))
         {
-            assert_eq!(out, 15163975);
+            assert_eq!(out, 15_163_975);
         }
     }
 
@@ -217,6 +216,6 @@ mod test {
 
         assert_eq!(universe.count_objects(), 1800);
         assert_eq!(universe.count_direct_orbits(), 1799);
-        assert_eq!(universe.count_indirect_orbits(), 315757);
+        assert_eq!(universe.count_indirect_orbits(), 315_757);
     }
 }
