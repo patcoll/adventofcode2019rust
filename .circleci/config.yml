@@ -15,8 +15,9 @@ jobs:
     steps:
       - rust/checkout_with_submodules
       - rust/update_toolchain
+      - rust/build
       - rust/test
-      - run: 'cargo test --all --ignored'
+      - run: 'cargo test -- --ignored'
 workflows:
   build:
     jobs:
