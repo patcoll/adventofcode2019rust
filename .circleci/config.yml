@@ -5,12 +5,16 @@ jobs:
   check:
     executor: rust/default
     steps:
+      - rust/checkout_with_submodules
+      - rust/update_toolchain
       - rust/check
       - rust/clippy
       - rust/format
   test:
     executor: rust/default
     steps:
+      - rust/checkout_with_submodules
+      - rust/update_toolchain
       - rust/test
 workflows:
   build:
