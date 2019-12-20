@@ -197,9 +197,7 @@ impl Runnable for Instruction {
             7 => {
                 if let [_, _, Some(store_pos)] = self.indexes.as_slice() {
                     program[(*store_pos) as usize] = match self.values.as_slice() {
-                        [Some(first), Some(second), _] if *first < *second => {
-                            1
-                        },
+                        [Some(first), Some(second), _] if *first < *second => 1,
                         _ => 0,
                     };
                 }
@@ -210,9 +208,7 @@ impl Runnable for Instruction {
             8 => {
                 if let [_, _, Some(store_pos)] = self.indexes.as_slice() {
                     program[(*store_pos) as usize] = match self.values.as_slice() {
-                        [Some(first), Some(second), _] if *first == *second => {
-                            1
-                        },
+                        [Some(first), Some(second), _] if *first == *second => 1,
                         _ => 0,
                     };
                 }
@@ -261,20 +257,19 @@ impl Instruction {
 
                     // println!("index: {:?}", index);
 
-                    let value =
-                        if let Some(i) = index {
-                            if i < program.len() {
-                                Some(program[i])
-                                // match (self.opcode.number, parameter_number) {
-                                //     // (1, 3) | (2, 3) => value_at_pos,
-                                //     _ => Some(program[i]),
-                                // }
-                            } else {
-                                None
-                            }
+                    let value = if let Some(i) = index {
+                        if i < program.len() {
+                            Some(program[i])
+                        // match (self.opcode.number, parameter_number) {
+                        //     // (1, 3) | (2, 3) => value_at_pos,
+                        //     _ => Some(program[i]),
+                        // }
                         } else {
                             None
-                        };
+                        }
+                    } else {
+                        None
+                    };
 
                     // println!("value: {:?}", value);
 
@@ -368,7 +363,7 @@ mod test {
     #[test]
     fn test_program_instruction() {
         assert_eq!(
-            run_program(&[1,9,10,3,2,3,11,0,99,30,40,50]),
+            run_program(&[1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50]),
             vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
         );
 

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::ops::{RangeInclusive};
+use std::ops::RangeInclusive;
 
 use rayon::prelude::*;
 

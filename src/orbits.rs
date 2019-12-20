@@ -62,8 +62,7 @@ impl Universe {
             graph.add_edge(orbited_id, orbiting_id, Default::default());
         }
 
-        self
-            .objects
+        self.objects
             .clone()
             .into_par_iter()
             .map(|object| {
