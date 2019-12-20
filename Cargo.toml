@@ -8,4 +8,5 @@ edition = "2018"
 
 [dependencies]
 lazy_static = "1.4.0"
+petgraph = "0.4.13"
 rayon = "1.2.1"

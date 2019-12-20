@@ -1,6 +1,7 @@
 pub mod code;
 pub mod fuel;
 pub mod grid;
+pub mod orbits;
 pub mod program;
 
 #[macro_use]
@@ -12,6 +13,7 @@ mod test {
     use super::*;
 
     use grid::{Coordinate, Grid, Route};
+    use orbits::{Universe};
 
     #[test]
     fn test_day_01() {
@@ -195,5 +197,16 @@ mod test {
         if let (_, Some(out)) = program::run_program_with_input_instruction(&program, Some(5)) {
             assert_eq!(out, 15163975);
         }
+    }
+
+    #[test]
+    #[ignore]
+    fn test_day_06() {
+        let input_str = include_str!("../data/d06.txt");
+        let universe = Universe::from(input_str);
+
+        assert_eq!(universe.count_objects(), 1800);
+        assert_eq!(universe.count_direct_orbits(), 1799);
+        assert_eq!(universe.count_indirect_orbits(), 315757);
     }
 }
