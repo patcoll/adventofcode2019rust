@@ -319,7 +319,7 @@ fn get_at_position(program: &[i64], pos: usize) -> Option<i64> {
     }
 }
 
-pub fn run_program(original: &Vec<i64>) -> Vec<i64> {
+pub fn run_program(original: &[i64]) -> Vec<i64> {
     let (program, _) = run_program_with_input_instruction(original, None);
     program
 }
@@ -368,12 +368,12 @@ mod test {
     #[test]
     fn test_program_instruction() {
         assert_eq!(
-            run_program(&vec![1,9,10,3,2,3,11,0,99,30,40,50]),
+            run_program(&[1,9,10,3,2,3,11,0,99,30,40,50]),
             vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
         );
 
         assert_eq!(
-            run_program(&vec![1101, 100, -1, 4, 0]),
+            run_program(&[1101, 100, -1, 4, 0]),
             vec![1101, 100, -1, 4, 99]
         );
     }
@@ -561,17 +561,17 @@ mod test {
     #[test]
     fn test_run_program() {
         assert_eq!(
-            run_program(&vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50]),
+            run_program(&[1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50]),
             vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
         );
-        assert_eq!(run_program(&vec![1, 0, 0, 0, 99]), vec![2, 0, 0, 0, 99]);
-        assert_eq!(run_program(&vec![2, 3, 0, 3, 99]), vec![2, 3, 0, 6, 99]);
+        assert_eq!(run_program(&[1, 0, 0, 0, 99]), vec![2, 0, 0, 0, 99]);
+        assert_eq!(run_program(&[2, 3, 0, 3, 99]), vec![2, 3, 0, 6, 99]);
         assert_eq!(
-            run_program(&vec![2, 4, 4, 5, 99, 0]),
+            run_program(&[2, 4, 4, 5, 99, 0]),
             vec![2, 4, 4, 5, 99, 9801]
         );
         assert_eq!(
-            run_program(&vec![1, 1, 1, 4, 99, 5, 6, 0, 99]),
+            run_program(&[1, 1, 1, 4, 99, 5, 6, 0, 99]),
             vec![30, 1, 1, 4, 2, 5, 6, 0, 99]
         );
     }

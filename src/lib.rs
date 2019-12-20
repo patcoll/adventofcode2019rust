@@ -20,7 +20,7 @@ mod test {
 
         let total: i64 = input
             .map(|line| line.parse::<i64>().unwrap())
-            .map(|mass| fuel::fuel_needed_for_mass(mass))
+            .map(fuel::fuel_needed_for_mass)
             .sum();
 
         assert_eq!(total, 3_318_195);
@@ -32,7 +32,7 @@ mod test {
 
         let total: i64 = input
             .map(|line| line.parse::<i64>().unwrap())
-            .map(|mass| fuel::total_fuel_needed_for_mass(mass))
+            .map(fuel::total_fuel_needed_for_mass)
             .sum();
 
         assert_eq!(total, 4_974_428);
@@ -42,7 +42,7 @@ mod test {
     fn test_day_02() {
         let mut program: Vec<i64> = include_str!("../data/d02.txt")
             .trim()
-            .split(",")
+            .split(',')
             .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
@@ -58,7 +58,7 @@ mod test {
     fn test_day_02_with_inputs() {
         let program: Vec<i64> = include_str!("../data/d02.txt")
             .trim()
-            .split(",")
+            .split(',')
             .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
@@ -71,7 +71,7 @@ mod test {
     fn test_day_02_part_2() {
         let program: Vec<i64> = include_str!("../data/d02.txt")
             .trim()
-            .split(",")
+            .split(',')
             .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
@@ -108,7 +108,7 @@ mod test {
         let routes: Vec<Route> = include_str!("../data/d03.txt")
             .trim()
             .split_whitespace()
-            .map(|line| Route::from(line))
+            .map(Route::from)
             .collect();
 
         let grid = Grid::from(&routes);
@@ -140,7 +140,7 @@ mod test {
         let routes: Vec<Route> = include_str!("../data/d03.txt")
             .trim()
             .split_whitespace()
-            .map(|line| Route::from(line))
+            .map(Route::from)
             .collect();
 
         let grid = Grid::from(&routes);
@@ -182,7 +182,7 @@ mod test {
     fn test_day_05() {
         let program: Vec<i64> = include_str!("../data/d05.txt")
             .trim()
-            .split(",")
+            .split(',')
             .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
@@ -197,7 +197,7 @@ mod test {
     fn test_day_05_part_2() {
         let program: Vec<i64> = include_str!("../data/d05.txt")
             .trim()
-            .split(",")
+            .split(',')
             .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
