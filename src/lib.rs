@@ -218,4 +218,12 @@ mod test {
         assert_eq!(universe.count_direct_orbits(), 1799);
         assert_eq!(universe.count_indirect_orbits(), 315_757);
     }
+
+    #[test]
+    fn test_day_06_part_2() {
+        let input_str = include_str!("../data/d06.txt");
+        let universe = Universe::from(input_str);
+
+        assert_eq!(universe.get_minimal_orbital_transfer_count("YOU", "SAN"), Some(481));
+    }
 }

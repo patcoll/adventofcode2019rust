@@ -1,3 +1,4 @@
+use petgraph::algo::astar;
 use petgraph::algo::bellman_ford;
 use petgraph::prelude::*;
 use rayon::prelude::*;
@@ -77,6 +78,37 @@ impl Universe {
             })
             .sum()
     }
+
+    pub fn get_hop_count(&self, from: &str, to: &str) -> Option<usize> {
+        let mut graph = GraphMap::<&str, f64, Undirected>::with_capacity(
+            self.count_objects(),
+            self.count_direct_orbits(),
+        );
+
+        for orbit in &self.orbits {
+            let orbited_id = orbit.orbited.0.as_str();
+            let orbiting_id = orbit.orbiting.0.as_str();
+            graph.add_edge(orbited_id, orbiting_id, Default::default());
+        }
+
+        let optional_values = astar(&graph, from, |finish| finish == to, |_| 0, |_| 0);
+        match optional_values {
+            Some((_, path)) => Some(path.len() - 1),
+            _ => None,
+        }
+    }
+
+    pub fn get_minimal_orbital_transfer_count(&self, from: &str, to: &str) -> Option<usize> {
+        if let Some(c) = self.get_hop_count(from, to) {
+            if c > 2 {
+                Some(c - 2)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
@@ -145,5 +177,21 @@ mod test {
         assert_eq!(universe.count_objects(), 12);
         assert_eq!(universe.count_direct_orbits(), 11);
         assert_eq!(universe.count_indirect_orbits(), 42);
+    }
+
+    #[test]
+    fn test_get_path() {
+        let universe = Universe::from("COM)A  A)B  B)C");
+        assert_eq!(universe.get_hop_count("COM", "B"), Some(2));
+        assert_eq!(universe.get_minimal_orbital_transfer_count("COM", "A"), None);
+        assert_eq!(universe.get_minimal_orbital_transfer_count("COM", "B"), None);
+        assert_eq!(universe.get_minimal_orbital_transfer_count("COM", "C"), Some(1));
+
+        let universe2 = Universe::from("COM)B B)C C)D D)E E)F B)G G)H D)I E)J J)K K)L K)YOU I)SAN");
+        assert_eq!(universe2.get_hop_count("COM", "B"), Some(1));
+        assert_eq!(universe2.get_hop_count("COM", "H"), Some(3));
+        assert_eq!(universe2.get_hop_count("YOU", "K"), Some(1));
+        assert_eq!(universe2.get_hop_count("YOU", "SAN"), Some(6));
+        assert_eq!(universe2.get_minimal_orbital_transfer_count("YOU", "SAN"), Some(4));
     }
 }
