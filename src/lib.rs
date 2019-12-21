@@ -224,6 +224,9 @@ mod test {
         let input_str = include_str!("../data/d06.txt");
         let universe = Universe::from(input_str);
 
-        assert_eq!(universe.get_minimal_orbital_transfer_count("YOU", "SAN"), Some(481));
+        assert_eq!(
+            universe.get_minimal_orbital_transfer_count("YOU", "SAN"),
+            Some(481)
+        );
     }
 }

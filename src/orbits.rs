@@ -98,7 +98,11 @@ impl Universe {
         }
     }
 
-    pub fn get_minimal_orbital_transfer_count(&self, from: &str, to: &str) -> Option<usize> {
+    pub fn get_minimal_orbital_transfer_count(
+        &self,
+        from: &str,
+        to: &str,
+    ) -> Option<usize> {
         if let Some(c) = self.get_hop_count(from, to) {
             if c > 2 {
                 Some(c - 2)
@@ -183,15 +187,28 @@ mod test {
     fn test_get_path() {
         let universe = Universe::from("COM)A  A)B  B)C");
         assert_eq!(universe.get_hop_count("COM", "B"), Some(2));
-        assert_eq!(universe.get_minimal_orbital_transfer_count("COM", "A"), None);
-        assert_eq!(universe.get_minimal_orbital_transfer_count("COM", "B"), None);
-        assert_eq!(universe.get_minimal_orbital_transfer_count("COM", "C"), Some(1));
+        assert_eq!(
+            universe.get_minimal_orbital_transfer_count("COM", "A"),
+            None
+        );
+        assert_eq!(
+            universe.get_minimal_orbital_transfer_count("COM", "B"),
+            None
+        );
+        assert_eq!(
+            universe.get_minimal_orbital_transfer_count("COM", "C"),
+            Some(1)
+        );
 
-        let universe2 = Universe::from("COM)B B)C C)D D)E E)F B)G G)H D)I E)J J)K K)L K)YOU I)SAN");
+        let universe2 =
+            Universe::from("COM)B B)C C)D D)E E)F B)G G)H D)I E)J J)K K)L K)YOU I)SAN");
         assert_eq!(universe2.get_hop_count("COM", "B"), Some(1));
         assert_eq!(universe2.get_hop_count("COM", "H"), Some(3));
         assert_eq!(universe2.get_hop_count("YOU", "K"), Some(1));
         assert_eq!(universe2.get_hop_count("YOU", "SAN"), Some(6));
-        assert_eq!(universe2.get_minimal_orbital_transfer_count("YOU", "SAN"), Some(4));
+        assert_eq!(
+            universe2.get_minimal_orbital_transfer_count("YOU", "SAN"),
+            Some(4)
+        );
     }
 }
