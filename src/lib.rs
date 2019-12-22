@@ -55,14 +55,14 @@ mod test {
     }
 
     #[test]
-    fn test_day_02_with_inputs() {
+    fn test_day_02_with_noun_and_verb() {
         let program: Vec<i64> = include_str!("../data/d02.txt")
             .trim()
             .split(',')
             .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
-        let result = program::run_program_with_inputs(&program, 12, 2);
+        let result = program::run_program_with_noun_and_verb(&program, 12, 2);
 
         assert_eq!(result[0], 9_706_670);
     }
