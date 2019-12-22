@@ -20,7 +20,11 @@ lazy_static! {
     };
 }
 
-pub fn run_program_with_noun_and_verb(original: &[i64], noun: i64, verb: i64) -> Vec<i64> {
+pub fn run_program_with_noun_and_verb(
+    original: &[i64],
+    noun: i64,
+    verb: i64,
+) -> Vec<i64> {
     let mut program = original.to_owned();
     program[1] = noun;
     program[2] = verb;
@@ -39,7 +43,9 @@ pub fn run_program_with_noun_and_verb_and_get_output(
 pub fn run_program_to_get_output(original: &[i64], desired_output: i64) -> (i64, i64) {
     for i in 0..=99 {
         for j in 0..=99 {
-            if run_program_with_noun_and_verb_and_get_output(original, i, j) == desired_output {
+            if run_program_with_noun_and_verb_and_get_output(original, i, j)
+                == desired_output
+            {
                 return (i, j);
             }
         }
