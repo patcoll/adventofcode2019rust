@@ -2,7 +2,7 @@ use crate::code::Digits;
 use itertools::Itertools;
 use rayon::prelude::*;
 use std::collections::HashMap;
-use std::sync::mpsc::{channel, Receiver, Sender, IntoIter};
+use std::sync::mpsc::{channel, IntoIter, Sender};
 
 const POSITION_MODE: u32 = 0;
 const IMMEDIATE_MODE: u32 = 1;
@@ -100,7 +100,7 @@ impl Program {
                 for phase in &permutation {
                     input = run_program_with_inputs(
                         &self.code,
-                        &[Some((*phase as i64)), Some(input)],
+                        &[Some(*phase as i64), Some(input)],
                     )
                     .output();
                 }
@@ -111,7 +111,10 @@ impl Program {
             .unwrap()
     }
 
-    pub fn find_best_phase_settings_in_feedback_loop_mode(&self, amplifier_count: usize) -> (Vec<usize>, i64) {
+    pub fn find_best_phase_settings_in_feedback_loop_mode(
+        &self,
+        amplifier_count: usize,
+    ) -> (Vec<usize>, i64) {
         (5..5 + amplifier_count)
             .permutations(amplifier_count)
             .map(|permutation| {
@@ -129,7 +132,7 @@ impl Program {
                     // )
                     input = run_program_with_inputs(
                         &self.code,
-                        &[Some((*phase as i64)), Some(input)],
+                        &[Some(*phase as i64), Some(input)],
                     )
                     .output();
                 }
@@ -140,7 +143,7 @@ impl Program {
             .unwrap()
     }
 
-    pub fn run<'a>(mut self) -> Program {
+    pub fn run(mut self) -> Program {
         let mut opcode: Opcode;
 
         loop {
@@ -429,6 +432,7 @@ impl<'a> Instruction<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use ntest::*;
 
     #[test]
     fn test_program_instruction() {
@@ -616,13 +620,15 @@ mod test {
 
     #[test]
     #[ignore]
+    #[timeout(5000)]
     fn test_find_best_phase_settings_in_feedback_loop_mode() {
         let program: &[i64] = &[
-            3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5
+            3, 26, 1001, 26, -4, 26, 3, 27, 1002, 27, 2, 27, 1, 27, 26, 27, 4, 27, 1001,
+            28, -1, 28, 1005, 28, 6, 99, 0, 0, 5,
         ];
         let prog = Program::from(program);
         let best = prog.find_best_phase_settings_in_feedback_loop_mode(5);
-        assert_eq!(best.0, vec![9,8,7,6,5]);
+        assert_eq!(best.0, vec![9, 8, 7, 6, 5]);
         assert_eq!(best.1, 139_629_729);
 
         // let program2: &[i64] = &[

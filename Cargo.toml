@@ -11,3 +11,6 @@ itertools = "0.8.2"
 lazy_static = "1.4.0"
 petgraph = "0.4.13"
 rayon = "1.2.1"
+
+[dev-dependencies]
+ntest = "*"
