@@ -69,7 +69,6 @@ mod test {
     }
 
     #[test]
-    #[ignore]
     fn test_day_02_part_2() {
         let program: Vec<i64> = include_str!("../data/d02.txt")
             .trim()
@@ -77,7 +76,8 @@ mod test {
             .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
-        let (noun, verb) = program::run_program_to_get_output(&program, 19_690_720);
+        let (noun, verb) =
+            program::run_program_to_get_output(&program, 19_690_720).unwrap();
 
         assert_eq!(noun, 25);
         assert_eq!(verb, 52);

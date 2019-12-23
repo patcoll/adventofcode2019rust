@@ -1,5 +1,6 @@
 use crate::code::Digits;
 use itertools::Itertools;
+use rayon::prelude::*;
 use std::collections::HashMap;
 
 const POSITION_MODE: u32 = 0;
@@ -110,17 +111,16 @@ pub fn run_program_with_noun_and_verb_and_get_output(
     result.code[0]
 }
 
-pub fn run_program_to_get_output(original: &[i64], desired_output: i64) -> (i64, i64) {
-    for i in 0..=99 {
-        for j in 0..=99 {
-            if run_program_with_noun_and_verb_and_get_output(original, i, j)
-                == desired_output
-            {
-                return (i, j);
-            }
-        }
-    }
-    (0, 0)
+pub fn run_program_to_get_output(
+    original: &[i64],
+    desired_output: i64,
+) -> Option<(i64, i64)> {
+    let permutations: Vec<(i64, i64)> =
+        (0..=99).permutations(2).map(|v| (v[0], v[1])).collect();
+
+    permutations.into_par_iter().find_first(|(i, j)| {
+        run_program_with_noun_and_verb_and_get_output(original, *i, *j) == desired_output
+    })
 }
 
 #[derive(Debug, Default)]
@@ -201,8 +201,8 @@ impl Instruction<'_> {
         let mut values = Vec::new();
         // let mut evaluated_values = Vec::new();
 
-        println!("opcode.number: {:?}", self.opcode.number);
-        println!("opcode.modes: {:?}", self.opcode.modes);
+        // println!("opcode.number: {:?}", self.opcode.number);
+        // println!("opcode.modes: {:?}", self.opcode.modes);
 
         for (mode_pos, mode) in self.opcode.modes.iter().enumerate() {
             let parameter_number = mode_pos + 1;
@@ -257,10 +257,10 @@ impl Instruction<'_> {
             // evaluated_values.push(evaluated_value);
         }
 
-        println!("indexes: {:?}", indexes);
-        println!("values: {:?}", values);
+        // println!("indexes: {:?}", indexes);
+        // println!("values: {:?}", values);
         // println!("evaluated_values: {:?}", evaluated_values);
-        println!("::");
+        // println!("::");
 
         self.indexes = indexes;
         self.values = values;
@@ -275,7 +275,7 @@ impl Instruction<'_> {
         // let mut program = &self.program.code;
         // let mut inputs = &self.program.inputs;
 
-        println!("(inputs): {:?}", self.program.inputs);
+        // println!("(inputs): {:?}", self.program.inputs);
 
         match self.opcode.number {
             1 => {
@@ -308,8 +308,8 @@ impl Instruction<'_> {
             }
             3 => {
                 let input = self.program.inputs.remove(0);
-                println!("input: {:?}", input);
-                println!("(inputs left): {:?}", self.program.inputs);
+                // println!("input: {:?}", input);
+                // println!("(inputs left): {:?}", self.program.inputs);
 
                 if let [Some(result_index)] = self.indexes.as_slice() {
                     // self.program.code[*result_index] = input.unwrap();
@@ -430,11 +430,11 @@ pub fn run_program_with_inputs(original: &[i64], inputs: &[Option<i64>]) -> Prog
             None => break,
         }
 
-        println!("program: {:?}", prog.code);
-        println!();
+        // println!("program: {:?}", prog.code);
+        // println!();
     }
 
-    println!("output: {:?}", prog.output);
+    // println!("output: {:?}", prog.output);
     // (program, output)
     prog
 }
