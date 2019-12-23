@@ -27,6 +27,7 @@ pub struct Program {
     pub code: Vec<i64>,
     pub inputs: Vec<Option<i64>>,
     output: Vec<Option<i64>>,
+    pub pos: usize,
 }
 
 impl From<&[i64]> for Program {
@@ -193,13 +194,11 @@ impl Instruction<'_> {
         }
     }
 
-    pub fn init(&mut self, pos: &usize) -> &Instruction<'_> {
-        // self.inputs = inputs.to_vec();
-        self.pos = *pos;
+    pub fn init(&mut self, pos: usize) -> &Instruction<'_> {
+        self.pos = pos;
 
         let mut indexes = Vec::new();
         let mut values = Vec::new();
-        // let mut evaluated_values = Vec::new();
 
         // println!("opcode.number: {:?}", self.opcode.number);
         // println!("opcode.modes: {:?}", self.opcode.modes);
@@ -216,35 +215,11 @@ impl Instruction<'_> {
                         None
                     };
 
-                    // println!("index: {:?}", index);
-
                     let value = if let Some(i) = index {
                         self.program.get(i)
-                    // if i < program.len() {
-                    //     self.program.get(i)
-                    //     Some(self.program.get(i))
-                    // // match (self.opcode.number, parameter_number) {
-                    // //     // (1, 3) | (2, 3) => value_at_pos,
-                    // //     _ => Some(program[i]),
-                    // // }
-                    // } else {
-                    //     None
-                    // }
                     } else {
                         None
                     };
-
-                    // println!("value: {:?}", value);
-
-                    // let evaluated_value =
-                    //     if let Some(_) = value {
-                    //         match (self.opcode.number, parameter_number) {
-                    //             (1, 3) | (2, 3) | (3, 1) => value_at_pos,
-                    //             _ => value,
-                    //         }
-                    //     } else {
-                    //         None
-                    //     };
 
                     (index, value)
                 }
@@ -254,7 +229,6 @@ impl Instruction<'_> {
 
             indexes.push(index);
             values.push(value);
-            // evaluated_values.push(evaluated_value);
         }
 
         // println!("indexes: {:?}", indexes);
@@ -264,20 +238,15 @@ impl Instruction<'_> {
 
         self.indexes = indexes;
         self.values = values;
-        // self.evaluated_values = evaluated_values;
 
         self
     }
 
     fn run(&mut self) -> Option<usize> {
-        // program: &mut Vec<i64>,
-
-        // let mut program = &self.program.code;
-        // let mut inputs = &self.program.inputs;
-
         // println!("(inputs): {:?}", self.program.inputs);
 
         match self.opcode.number {
+            // add
             1 => {
                 if let [Some(first), Some(second), _] = self.values.as_slice() {
                     if let [_, _, Some(result_index)] = self.indexes.as_slice() {
@@ -287,6 +256,7 @@ impl Instruction<'_> {
 
                 Some(self.pos + self.opcode.length)
             }
+            // multiply
             2 => {
                 if let [Some(first), Some(second), _] = self.values.as_slice() {
                     if let [_, _, Some(result_index)] = self.indexes.as_slice() {
@@ -294,50 +264,31 @@ impl Instruction<'_> {
                     }
                 };
 
-                // println!("multiply values: {:?}", &self.values[0..2]);
-                // let result = &self.values[0..2].iter().fold(1, |acc, n| acc * n.unwrap());
-                // // println!("result: {:?}", result);
-                // let result_index = self.indexes[2].unwrap();
-                // // println!("result_index: {:?}", result_index);
-                //
-                // self.program.code[result_index] = *result;
-
-                // println!("program: {:?}", self.program.code);
-                // println!("");
                 Some(self.pos + self.opcode.length)
             }
+            // input
             3 => {
                 let input = self.program.inputs.remove(0);
                 // println!("input: {:?}", input);
                 // println!("(inputs left): {:?}", self.program.inputs);
 
                 if let [Some(result_index)] = self.indexes.as_slice() {
-                    // self.program.code[*result_index] = input.unwrap();
                     self.program.set(*result_index, input.unwrap());
                 };
 
-                // let result_index = self.indexes[0].unwrap();
-                // self.program.code[result_index] = input.unwrap();
-
-                // println!("program: {:?}", self.program.code);
-                // println!("");
-
                 Some(self.pos + self.opcode.length)
             }
+            // output
             4 => {
                 if let [Some(out)] = self.values.as_slice() {
-                    // self.program.code[*result_index as usize] = input.unwrap();
                     println!("[program::out]: {}", out);
+
                     self.program.output.push(Some(*out));
+
                     Some(self.pos + self.opcode.length)
                 } else {
                     panic!("No output from output instruction");
                 }
-
-                // if let Some(out) = self.values[0] {
-                // } else {
-                //     panic!("No output from output instruction");
-                // }
             }
             // jump-if-true
             5 => match self.values.as_slice() {
@@ -354,16 +305,11 @@ impl Instruction<'_> {
                 if let [_, _, Some(store_pos)] = self.indexes.as_slice() {
                     self.program.set(
                         (*store_pos) as usize,
-                        // input.unwrap()
                         match self.values.as_slice() {
                             [Some(first), Some(second), _] if *first < *second => 1,
                             _ => 0,
                         },
                     );
-                    // self.program.code[(*store_pos) as usize] = match self.values.as_slice() {
-                    //     [Some(first), Some(second), _] if *first < *second => 1,
-                    //     _ => 0,
-                    // };
                 }
 
                 Some(self.pos + self.opcode.length)
@@ -371,13 +317,8 @@ impl Instruction<'_> {
             // equals
             8 => {
                 if let [_, _, Some(store_pos)] = self.indexes.as_slice() {
-                    // self.program.code[(*store_pos) as usize] = match self.values.as_slice() {
-                    //     [Some(first), Some(second), _] if *first == *second => 1,
-                    //     _ => 0,
-                    // };
                     self.program.set(
                         (*store_pos) as usize,
-                        // input.unwrap()
                         match self.values.as_slice() {
                             [Some(first), Some(second), _] if *first == *second => 1,
                             _ => 0,
@@ -387,6 +328,7 @@ impl Instruction<'_> {
 
                 Some(self.pos + self.opcode.length)
             }
+            // halt
             99 => Default::default(),
             _ => Default::default(),
         }
@@ -404,21 +346,22 @@ pub fn run_program_with_input(original: &[i64], input: Option<i64>) -> Program {
 pub fn run_program_with_inputs(original: &[i64], inputs: &[Option<i64>]) -> Program {
     // let mut program: Vec<i64> = original.to_owned();
 
-    let mut pos = 0;
+    // let mut pos = 0;
     let mut prog = Program::new(&original, inputs);
     let mut opcode: Opcode;
     // let mut output = None;
 
     loop {
+        let pos = prog.pos;
         let opcode_value = prog.get(pos).unwrap();
         opcode = Opcode::from(opcode_value);
         // println!("opcode: {:?}", opcode);
         let mut instruction = Instruction::new(&mut prog, opcode);
-        instruction.init(&pos);
+        instruction.init(pos);
 
         match instruction.run() {
             Some(new_pos) => {
-                pos = new_pos;
+                prog.pos = new_pos;
             }
             None => break,
         }
