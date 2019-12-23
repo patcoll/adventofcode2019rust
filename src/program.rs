@@ -1,4 +1,5 @@
 use crate::code::Digits;
+use itertools::Itertools;
 use std::collections::HashMap;
 
 const POSITION_MODE: u32 = 0;
@@ -24,15 +25,17 @@ lazy_static! {
 pub struct Program {
     pub code: Vec<i64>,
     pub inputs: Vec<Option<i64>>,
-    output: Option<i64>,
+    output: Vec<Option<i64>>,
 }
 
-// impl Default for &Program {
-//     fn default() -> Self {
-//         let p = Program::default();
-//         &p
-//     }
-// }
+impl From<&[i64]> for Program {
+    fn from(code: &[i64]) -> Self {
+        Program {
+            code: code.to_owned(),
+            ..Default::default()
+        }
+    }
+}
 
 impl Program {
     fn new(code: &[i64], inputs: &[Option<i64>]) -> Program {
@@ -50,8 +53,42 @@ impl Program {
         }
     }
 
+    pub fn set_at_position(&mut self, pos: usize, value: i64) -> Option<i64> {
+        match pos {
+            p if p >= self.code.len() => None,
+            _ => {
+                self.code[pos] = value;
+                Some(value)
+            },
+        }
+    }
+
     pub fn output(&self) -> i64 {
-        self.output.expect("Expected output")
+        if self.output.is_empty() || self.output[self.output.len() - 1].is_none() {
+            panic!("Expected output");
+        }
+        self.output[self.output.len() - 1].unwrap()
+    }
+
+    pub fn find_best_phase_settings(&self, amplifier_count: usize) -> (Vec<usize>, i64) {
+        (0..amplifier_count)
+            .permutations(amplifier_count)
+            .map(|permutation| {
+                let mut input = 0;
+
+                for i in 0..amplifier_count {
+                    let phase = permutation[i];
+                    input =
+                        run_program_with_inputs(
+                            &self.code,
+                            &[Some(phase as i64), Some(input)]
+                        ).output();
+                }
+
+                (permutation, input)
+            })
+            .max_by_key(|(_, power)| *power)
+            .unwrap()
     }
 
     pub fn run() {
@@ -237,7 +274,7 @@ impl Instruction<'_> {
         self
     }
 
-    fn run(&mut self) -> (Option<usize>, Option<i64>) {
+    fn run(&mut self) -> Option<usize> {
         // program: &mut Vec<i64>,
 
         // let mut program = &self.program.code;
@@ -249,16 +286,16 @@ impl Instruction<'_> {
             1 => {
                 if let [Some(first), Some(second), _] = self.values.as_slice() {
                     if let [_, _, Some(result_index)] = self.indexes.as_slice() {
-                        self.program.code[*result_index] = first + second;
+                        self.program.set_at_position(*result_index, first + second);
                     }
                 };
 
-                (Some(self.pos + self.opcode.length), None)
+                Some(self.pos + self.opcode.length)
             }
             2 => {
                 if let [Some(first), Some(second), _] = self.values.as_slice() {
                     if let [_, _, Some(result_index)] = self.indexes.as_slice() {
-                        self.program.code[*result_index] = first * second;
+                        self.program.set_at_position(*result_index, first * second);
                     }
                 };
 
@@ -272,7 +309,7 @@ impl Instruction<'_> {
 
                 // println!("program: {:?}", self.program.code);
                 // println!("");
-                (Some(self.pos + self.opcode.length), None)
+                Some(self.pos + self.opcode.length)
             }
             3 => {
                 let input = self.program.inputs.remove(0);
@@ -280,7 +317,8 @@ impl Instruction<'_> {
                 println!("(inputs left): {:?}", self.program.inputs);
 
                 if let [Some(result_index)] = self.indexes.as_slice() {
-                    self.program.code[*result_index] = input.unwrap();
+                    // self.program.code[*result_index] = input.unwrap();
+                    self.program.set_at_position(*result_index, input.unwrap());
                 };
 
                 // let result_index = self.indexes[0].unwrap();
@@ -289,14 +327,14 @@ impl Instruction<'_> {
                 // println!("program: {:?}", self.program.code);
                 // println!("");
 
-                (Some(self.pos + self.opcode.length), None)
+                Some(self.pos + self.opcode.length)
             }
             4 => {
                 if let [Some(out)] = self.values.as_slice() {
                     // self.program.code[*result_index as usize] = input.unwrap();
                     println!("[program::out]: {}", out);
-                    self.program.output = Some(*out);
-                    (Some(self.pos + self.opcode.length), Some(*out))
+                    self.program.output.push(Some(*out));
+                    Some(self.pos + self.opcode.length)
                 } else {
                     panic!("No output from output instruction");
                 }
@@ -309,38 +347,54 @@ impl Instruction<'_> {
             // jump-if-true
             5 => match self.values.as_slice() {
                 [Some(param), Some(value)] if *param != 0 => {
-                    (Some(*value as usize), None)
+                    Some(*value as usize)
                 }
-                _ => (Some(self.pos + self.opcode.length), None),
+                _ => Some(self.pos + self.opcode.length),
             },
             // jump-if-false
             6 => match self.values.as_slice() {
                 [Some(param), Some(value)] if *param == 0 => {
-                    (Some(*value as usize), None)
+                    Some(*value as usize)
                 }
-                _ => (Some(self.pos + self.opcode.length), None),
+                _ => Some(self.pos + self.opcode.length),
             },
             // less than
             7 => {
                 if let [_, _, Some(store_pos)] = self.indexes.as_slice() {
-                    self.program.code[(*store_pos) as usize] = match self.values.as_slice() {
-                        [Some(first), Some(second), _] if *first < *second => 1,
-                        _ => 0,
-                    };
+                    self.program.set_at_position(
+                        (*store_pos) as usize,
+                        // input.unwrap()
+                        match self.values.as_slice() {
+                            [Some(first), Some(second), _] if *first < *second => 1,
+                            _ => 0,
+                        }
+                    );
+                    // self.program.code[(*store_pos) as usize] = match self.values.as_slice() {
+                    //     [Some(first), Some(second), _] if *first < *second => 1,
+                    //     _ => 0,
+                    // };
                 }
 
-                (Some(self.pos + self.opcode.length), None)
+                Some(self.pos + self.opcode.length)
             }
             // equals
             8 => {
                 if let [_, _, Some(store_pos)] = self.indexes.as_slice() {
-                    self.program.code[(*store_pos) as usize] = match self.values.as_slice() {
-                        [Some(first), Some(second), _] if *first == *second => 1,
-                        _ => 0,
-                    };
+                    // self.program.code[(*store_pos) as usize] = match self.values.as_slice() {
+                    //     [Some(first), Some(second), _] if *first == *second => 1,
+                    //     _ => 0,
+                    // };
+                    self.program.set_at_position(
+                        (*store_pos) as usize,
+                        // input.unwrap()
+                        match self.values.as_slice() {
+                            [Some(first), Some(second), _] if *first == *second => 1,
+                            _ => 0,
+                        }
+                    );
                 }
 
-                (Some(self.pos + self.opcode.length), None)
+                Some(self.pos + self.opcode.length)
             }
             99 => Default::default(),
             _ => Default::default(),
@@ -383,14 +437,12 @@ pub fn run_program_with_inputs(
         // println!("opcode: {:?}", opcode);
         let mut instruction = Instruction::new(&mut prog, opcode);
         instruction.init(&pos);
-        // println!("instruction: {:?}", instruction);
 
-        // hard code input for now
         match instruction.run() {
-            (Some(new_pos), _) => {
+            Some(new_pos) => {
                 pos = new_pos;
             }
-            (None, _) => break,
+            None => break,
         }
 
         println!("program: {:?}", prog.code);
@@ -610,7 +662,8 @@ mod test {
 
     #[test]
     fn test_phase_settings() {
-        let program = [3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0];
+        let program: &[i64] = &[3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0];
+
         // phase settings: 4,3,2,1,0
         assert_eq!(
             run_program_with_inputs(
@@ -651,5 +704,29 @@ mod test {
             ).output(),
             43210
         );
+    }
+
+    #[test]
+    fn test_find_best_phase_settings() {
+        let program: &[i64] = &[3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0];
+        let prog = Program::from(program);
+        let best = prog.find_best_phase_settings(5);
+        assert_eq!(best.0, vec![4,3,2,1,0]);
+        assert_eq!(best.1, 43210);
+
+        let program2: &[i64] = &[3,23,3,24,1002,24,10,24,1002,23,-1,23,101,5,23,23,1,24,23,23,4,23,99,0,0];
+        let prog2 = Program::from(program2);
+        let best2 = prog2.find_best_phase_settings(5);
+        assert_eq!(best2.0, vec![0,1,2,3,4]);
+        assert_eq!(best2.1, 54321);
+
+        // let program3: &[i64] = &[3,23,3,24,1002,24,10,24,1002,23,-1,23,101,5,23,23,1,24,23,23,4,23,99,0,0];
+        // let prog3 = Program::from(program3);
+        // assert_eq!(prog3.find_best_phase_settings(5).1, 54321);
+        let program3: &[i64] = &[3,31,3,32,1002,32,10,32,1001,31,-2,31,1007,31,0,33,1002,33,7,33,1,33,31,31,1,32,31,31,4,31,99,0,0,0];
+        let prog3 = Program::from(program3);
+        let best3 = prog3.find_best_phase_settings(5);
+        assert_eq!(best3.0, vec![1,0,4,3,2]);
+        assert_eq!(best3.1, 65210);
     }
 }
