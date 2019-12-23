@@ -236,6 +236,6 @@ mod test {
         let best = prog.find_best_phase_settings(5);
 
         assert_eq!(best.0, vec![2, 1, 4, 3, 0]);
-        assert_eq!(best.1, 118936);
+        assert_eq!(best.1, 118_936);
     }
 }

@@ -76,12 +76,12 @@ impl Program {
             .map(|permutation| {
                 let mut input = 0;
 
-                for i in 0..amplifier_count {
-                    let phase = permutation[i];
+                for phase in &permutation {
+                    // let phase = permutation[i];
                     input =
                         run_program_with_inputs(
                             &self.code,
-                            &[Some(phase as i64), Some(input)]
+                            &[Some(*phase as i64), Some(input)]
                         ).output();
                 }
 
