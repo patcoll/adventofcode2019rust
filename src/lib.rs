@@ -188,7 +188,10 @@ mod test {
             .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
-        assert_eq!(program::run_program_with_input(&program, Some(1)).output(), 16_574_641);
+        assert_eq!(
+            program::run_program_with_input(&program, Some(1)).output(),
+            16_574_641
+        );
     }
 
     #[test]
@@ -199,7 +202,10 @@ mod test {
             .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
-        assert_eq!(program::run_program_with_input(&program, Some(5)).output(), 15_163_975);
+        assert_eq!(
+            program::run_program_with_input(&program, Some(5)).output(),
+            15_163_975
+        );
     }
 
     #[test]

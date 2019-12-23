@@ -59,7 +59,7 @@ impl Program {
             _ => {
                 self.code[pos] = value;
                 Some(value)
-            },
+            }
         }
     }
 
@@ -78,11 +78,11 @@ impl Program {
 
                 for phase in &permutation {
                     // let phase = permutation[i];
-                    input =
-                        run_program_with_inputs(
-                            &self.code,
-                            &[Some(*phase as i64), Some(input)]
-                        ).output();
+                    input = run_program_with_inputs(
+                        &self.code,
+                        &[Some(*phase as i64), Some(input)],
+                    )
+                    .output();
                 }
 
                 (permutation, input)
@@ -91,15 +91,10 @@ impl Program {
             .unwrap()
     }
 
-    pub fn run() {
-    }
+    pub fn run() {}
 }
 
-pub fn run_program_with_noun_and_verb(
-    original: &[i64],
-    noun: i64,
-    verb: i64,
-) -> Program {
+pub fn run_program_with_noun_and_verb(original: &[i64], noun: i64, verb: i64) -> Program {
     let mut program = original.to_owned();
     program[1] = noun;
     program[2] = verb;
@@ -225,16 +220,16 @@ impl Instruction<'_> {
 
                     let value = if let Some(i) = index {
                         self.program.get_at_position(i)
-                        // if i < program.len() {
-                        //     self.program.get_at_position(i)
-                        //     Some(self.program.get_at_position(i))
-                        // // match (self.opcode.number, parameter_number) {
-                        // //     // (1, 3) | (2, 3) => value_at_pos,
-                        // //     _ => Some(program[i]),
-                        // // }
-                        // } else {
-                        //     None
-                        // }
+                    // if i < program.len() {
+                    //     self.program.get_at_position(i)
+                    //     Some(self.program.get_at_position(i))
+                    // // match (self.opcode.number, parameter_number) {
+                    // //     // (1, 3) | (2, 3) => value_at_pos,
+                    // //     _ => Some(program[i]),
+                    // // }
+                    // } else {
+                    //     None
+                    // }
                     } else {
                         None
                     };
@@ -346,16 +341,12 @@ impl Instruction<'_> {
             }
             // jump-if-true
             5 => match self.values.as_slice() {
-                [Some(param), Some(value)] if *param != 0 => {
-                    Some(*value as usize)
-                }
+                [Some(param), Some(value)] if *param != 0 => Some(*value as usize),
                 _ => Some(self.pos + self.opcode.length),
             },
             // jump-if-false
             6 => match self.values.as_slice() {
-                [Some(param), Some(value)] if *param == 0 => {
-                    Some(*value as usize)
-                }
+                [Some(param), Some(value)] if *param == 0 => Some(*value as usize),
                 _ => Some(self.pos + self.opcode.length),
             },
             // less than
@@ -367,7 +358,7 @@ impl Instruction<'_> {
                         match self.values.as_slice() {
                             [Some(first), Some(second), _] if *first < *second => 1,
                             _ => 0,
-                        }
+                        },
                     );
                     // self.program.code[(*store_pos) as usize] = match self.values.as_slice() {
                     //     [Some(first), Some(second), _] if *first < *second => 1,
@@ -390,7 +381,7 @@ impl Instruction<'_> {
                         match self.values.as_slice() {
                             [Some(first), Some(second), _] if *first == *second => 1,
                             _ => 0,
-                        }
+                        },
                     );
                 }
 
@@ -413,17 +404,11 @@ pub fn run_program(original: &[i64]) -> Program {
     run_program_with_input(original, None)
 }
 
-pub fn run_program_with_input(
-    original: &[i64],
-    input: Option<i64>,
-) -> Program {
+pub fn run_program_with_input(original: &[i64], input: Option<i64>) -> Program {
     run_program_with_inputs(original, &[input])
 }
 
-pub fn run_program_with_inputs(
-    original: &[i64],
-    inputs: &[Option<i64>],
-) -> Program {
+pub fn run_program_with_inputs(original: &[i64], inputs: &[Option<i64>]) -> Program {
     // let mut program: Vec<i64> = original.to_owned();
 
     let mut pos = 0;
@@ -474,11 +459,7 @@ mod test {
     #[test]
     fn test_run_program_with_inputs() {
         let program = vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8];
-        assert_eq!(
-            run_program_with_inputs(&program, &[Some(8)])
-                .output(),
-            1
-        );
+        assert_eq!(run_program_with_inputs(&program, &[Some(8)]).output(), 1);
     }
 
     #[test]
@@ -491,30 +472,14 @@ mod test {
         // immediate mode
         let i_program = vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8];
 
-        assert_eq!(
-            run_program_with_input(&program, Some(8))
-                .output(),
-            1
-        );
+        assert_eq!(run_program_with_input(&program, Some(8)).output(), 1);
 
-        assert_eq!(
-            run_program_with_input(&i_program, Some(8))
-                .output(),
-            1
-        );
+        assert_eq!(run_program_with_input(&i_program, Some(8)).output(), 1);
 
         (0..20).filter(|n| *n != 8).for_each(|n| {
-            assert_eq!(
-                run_program_with_input(&program, Some(n))
-                    .output(),
-                0
-            );
+            assert_eq!(run_program_with_input(&program, Some(n)).output(), 0);
 
-            assert_eq!(
-                run_program_with_input(&i_program, Some(n))
-                    .output(),
-                0
-            );
+            assert_eq!(run_program_with_input(&i_program, Some(n)).output(), 0);
         });
     }
 
@@ -528,30 +493,14 @@ mod test {
         // immediate mode
         let i_program = vec![3, 3, 1107, -1, 8, 3, 4, 3, 99];
 
-        assert_eq!(
-            run_program_with_input(&program, Some(7))
-                .output(),
-            1
-        );
+        assert_eq!(run_program_with_input(&program, Some(7)).output(), 1);
 
-        assert_eq!(
-            run_program_with_input(&i_program, Some(7))
-                .output(),
-            1
-        );
+        assert_eq!(run_program_with_input(&i_program, Some(7)).output(), 1);
 
         (0..20).filter(|n| *n >= 8).for_each(|n| {
-            assert_eq!(
-                run_program_with_input(&program, Some(n))
-                    .output(),
-                0
-            );
+            assert_eq!(run_program_with_input(&program, Some(n)).output(), 0);
 
-            assert_eq!(
-                run_program_with_input(&i_program, Some(n))
-                    .output(),
-                0
-            );
+            assert_eq!(run_program_with_input(&i_program, Some(n)).output(), 0);
         });
     }
 
@@ -560,29 +509,13 @@ mod test {
         let program = vec![3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
         let i_program = vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1];
 
-        assert_eq!(
-            run_program_with_input(&program, Some(0))
-                .output(),
-            0
-        );
+        assert_eq!(run_program_with_input(&program, Some(0)).output(), 0);
 
-        assert_eq!(
-            run_program_with_input(&i_program, Some(0))
-                .output(),
-            0
-        );
+        assert_eq!(run_program_with_input(&i_program, Some(0)).output(), 0);
 
-        assert_eq!(
-            run_program_with_input(&program, Some(1))
-                .output(),
-            1
-        );
+        assert_eq!(run_program_with_input(&program, Some(1)).output(), 1);
 
-        assert_eq!(
-            run_program_with_input(&i_program, Some(1))
-                .output(),
-            1
-        );
+        assert_eq!(run_program_with_input(&i_program, Some(1)).output(), 1);
     }
 
     #[test]
@@ -590,29 +523,13 @@ mod test {
         let program = vec![3, 12, 5, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
         let i_program = vec![3, 3, 1106, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1];
 
-        assert_eq!(
-            run_program_with_input(&program, Some(0))
-                .output(),
-            1
-        );
+        assert_eq!(run_program_with_input(&program, Some(0)).output(), 1);
 
-        assert_eq!(
-            run_program_with_input(&i_program, Some(0))
-                .output(),
-            1
-        );
+        assert_eq!(run_program_with_input(&i_program, Some(0)).output(), 1);
 
-        assert_eq!(
-            run_program_with_input(&program, Some(1))
-                .output(),
-            0
-        );
+        assert_eq!(run_program_with_input(&program, Some(1)).output(), 0);
 
-        assert_eq!(
-            run_program_with_input(&i_program, Some(1))
-                .output(),
-            0
-        );
+        assert_eq!(run_program_with_input(&i_program, Some(1)).output(), 0);
     }
 
     #[test]
@@ -623,23 +540,11 @@ mod test {
             1101, 1000, 1, 20, 4, 20, 1105, 1, 46, 98, 99,
         ];
 
-        assert_eq!(
-            run_program_with_input(&program, Some(7))
-                .output(),
-            999
-        );
+        assert_eq!(run_program_with_input(&program, Some(7)).output(), 999);
 
-        assert_eq!(
-            run_program_with_input(&program, Some(8))
-                .output(),
-            1000
-        );
+        assert_eq!(run_program_with_input(&program, Some(8)).output(), 1000);
 
-        assert_eq!(
-            run_program_with_input(&program, Some(9))
-                .output(),
-            1001
-        );
+        assert_eq!(run_program_with_input(&program, Some(9)).output(), 1001);
     }
 
     #[test]
@@ -662,71 +567,66 @@ mod test {
 
     #[test]
     fn test_phase_settings() {
-        let program: &[i64] = &[3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0];
+        let program: &[i64] = &[
+            3, 15, 3, 16, 1002, 16, 10, 16, 1, 16, 15, 15, 4, 15, 99, 0, 0,
+        ];
 
         // phase settings: 4,3,2,1,0
         assert_eq!(
-            run_program_with_inputs(
-                &program,
-                &[Some(4), Some(0)]
-            ).output(),
+            run_program_with_inputs(&program, &[Some(4), Some(0)]).output(),
             4
         );
 
         assert_eq!(
-            run_program_with_inputs(
-                &program,
-                &[Some(3), Some(4)]
-            ).output(),
+            run_program_with_inputs(&program, &[Some(3), Some(4)]).output(),
             43
         );
 
         assert_eq!(
-            run_program_with_inputs(
-                &program,
-                &[Some(2), Some(43)]
-            ).output(),
+            run_program_with_inputs(&program, &[Some(2), Some(43)]).output(),
             432
         );
 
         assert_eq!(
-            run_program_with_inputs(
-                &program,
-                &[Some(1), Some(432)]
-            ).output(),
+            run_program_with_inputs(&program, &[Some(1), Some(432)]).output(),
             4321
         );
 
         assert_eq!(
-            run_program_with_inputs(
-                &program,
-                &[Some(0), Some(4321)]
-            ).output(),
+            run_program_with_inputs(&program, &[Some(0), Some(4321)]).output(),
             43210
         );
     }
 
     #[test]
     fn test_find_best_phase_settings() {
-        let program: &[i64] = &[3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0];
+        let program: &[i64] = &[
+            3, 15, 3, 16, 1002, 16, 10, 16, 1, 16, 15, 15, 4, 15, 99, 0, 0,
+        ];
         let prog = Program::from(program);
         let best = prog.find_best_phase_settings(5);
-        assert_eq!(best.0, vec![4,3,2,1,0]);
+        assert_eq!(best.0, vec![4, 3, 2, 1, 0]);
         assert_eq!(best.1, 43210);
 
-        let program2: &[i64] = &[3,23,3,24,1002,24,10,24,1002,23,-1,23,101,5,23,23,1,24,23,23,4,23,99,0,0];
+        let program2: &[i64] = &[
+            3, 23, 3, 24, 1002, 24, 10, 24, 1002, 23, -1, 23, 101, 5, 23, 23, 1, 24, 23,
+            23, 4, 23, 99, 0, 0,
+        ];
         let prog2 = Program::from(program2);
         let best2 = prog2.find_best_phase_settings(5);
-        assert_eq!(best2.0, vec![0,1,2,3,4]);
+        assert_eq!(best2.0, vec![0, 1, 2, 3, 4]);
         assert_eq!(best2.1, 54321);
 
         // let program3: &[i64] = &[3,23,3,24,1002,24,10,24,1002,23,-1,23,101,5,23,23,1,24,23,23,4,23,99,0,0];
         // let prog3 = Program::from(program3);
         // assert_eq!(prog3.find_best_phase_settings(5).1, 54321);
-        let program3: &[i64] = &[3,31,3,32,1002,32,10,32,1001,31,-2,31,1007,31,0,33,1002,33,7,33,1,33,31,31,1,32,31,31,4,31,99,0,0,0];
+        let program3: &[i64] = &[
+            3, 31, 3, 32, 1002, 32, 10, 32, 1001, 31, -2, 31, 1007, 31, 0, 33, 1002, 33,
+            7, 33, 1, 33, 31, 31, 1, 32, 31, 31, 4, 31, 99, 0, 0, 0,
+        ];
         let prog3 = Program::from(program3);
         let best3 = prog3.find_best_phase_settings(5);
-        assert_eq!(best3.0, vec![1,0,4,3,2]);
+        assert_eq!(best3.0, vec![1, 0, 4, 3, 2]);
         assert_eq!(best3.1, 65210);
     }
 }
