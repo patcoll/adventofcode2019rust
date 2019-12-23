@@ -93,7 +93,32 @@ impl Program {
             .unwrap()
     }
 
-    pub fn run() {}
+    pub fn run(mut self) -> Program {
+        let mut opcode: Opcode;
+
+        loop {
+            let pos = self.pos;
+            let opcode_value = self.get(pos).unwrap();
+            opcode = Opcode::from(opcode_value);
+            // println!("opcode: {:?}", opcode);
+
+            let mut instruction = Instruction::new(&mut self, opcode);
+            instruction.init(pos);
+
+            match instruction.run() {
+                Some(new_pos) => {
+                    self.pos = new_pos;
+                }
+                None => break,
+            }
+
+            // println!("program: {:?}", prog.code);
+            // println!();
+        }
+
+        // println!("output: {:?}", prog.output);
+        self
+    }
 }
 
 pub fn run_program_with_noun_and_verb(original: &[i64], noun: i64, verb: i64) -> Program {
@@ -344,35 +369,7 @@ pub fn run_program_with_input(original: &[i64], input: Option<i64>) -> Program {
 }
 
 pub fn run_program_with_inputs(original: &[i64], inputs: &[Option<i64>]) -> Program {
-    // let mut program: Vec<i64> = original.to_owned();
-
-    // let mut pos = 0;
-    let mut prog = Program::new(&original, inputs);
-    let mut opcode: Opcode;
-    // let mut output = None;
-
-    loop {
-        let pos = prog.pos;
-        let opcode_value = prog.get(pos).unwrap();
-        opcode = Opcode::from(opcode_value);
-        // println!("opcode: {:?}", opcode);
-        let mut instruction = Instruction::new(&mut prog, opcode);
-        instruction.init(pos);
-
-        match instruction.run() {
-            Some(new_pos) => {
-                prog.pos = new_pos;
-            }
-            None => break,
-        }
-
-        // println!("program: {:?}", prog.code);
-        // println!();
-    }
-
-    // println!("output: {:?}", prog.output);
-    // (program, output)
-    prog
+    Program::new(original, inputs).run()
 }
 
 #[cfg(test)]
