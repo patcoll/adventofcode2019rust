@@ -13,6 +13,7 @@ mod test {
 
     use grid::{Coordinate, Grid, Route};
     use orbits::Universe;
+    use program::Program;
 
     #[test]
     fn test_day_01() {
@@ -68,6 +69,7 @@ mod test {
     }
 
     #[test]
+    #[ignore]
     fn test_day_02_part_2() {
         let program: Vec<i64> = include_str!("../data/d02.txt")
             .trim()
@@ -220,5 +222,20 @@ mod test {
             universe.get_minimal_orbital_transfer_count("YOU", "SAN"),
             Some(481)
         );
+    }
+
+    #[test]
+    fn test_day_07() {
+        let program: Vec<i64> = include_str!("../data/d07.txt")
+            .trim()
+            .split(',')
+            .map(|node| node.parse::<i64>().unwrap())
+            .collect();
+
+        let prog = Program::from(program.as_slice());
+        let best = prog.find_best_phase_settings(5);
+
+        assert_eq!(best.0, vec![2, 1, 4, 3, 0]);
+        assert_eq!(best.1, 118936);
     }
 }
