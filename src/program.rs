@@ -2,6 +2,7 @@ use crate::code::Digits;
 use itertools::Itertools;
 use rayon::prelude::*;
 use std::collections::HashMap;
+use std::sync::mpsc::{channel, Receiver, Sender, IntoIter};
 
 const POSITION_MODE: u32 = 0;
 const IMMEDIATE_MODE: u32 = 1;
@@ -22,29 +23,46 @@ lazy_static! {
     };
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Program {
     pub code: Vec<i64>,
-    pub inputs: Vec<Option<i64>>,
-    output: Vec<Option<i64>>,
+    pub sender: Sender<Option<i64>>,
+    pub inputs: IntoIter<Option<i64>>,
+    pub output: Vec<Option<i64>>,
     pub pos: usize,
+    pub stopped: bool,
 }
 
 impl From<&[i64]> for Program {
     fn from(code: &[i64]) -> Self {
+        let (sender, recv) = channel();
+
         Program {
             code: code.to_owned(),
-            ..Default::default()
+            sender,
+            inputs: recv.into_iter(),
+            output: vec![],
+            pos: 0,
+            stopped: false,
         }
     }
 }
 
 impl Program {
     fn new(code: &[i64], inputs: &[Option<i64>]) -> Program {
+        let (sender, recv) = channel();
+
+        for input in inputs {
+            sender.send(input.clone()).unwrap();
+        }
+
         Program {
             code: code.to_owned(),
-            inputs: inputs.to_owned(),
-            ..Default::default()
+            sender,
+            inputs: recv.into_iter(),
+            output: vec![],
+            pos: 0,
+            stopped: false,
         }
     }
 
@@ -73,16 +91,16 @@ impl Program {
     }
 
     pub fn find_best_phase_settings(&self, amplifier_count: usize) -> (Vec<usize>, i64) {
+        // self.find_best_phase_settings_with_loop_count(amplifier_count, 1)
         (0..amplifier_count)
             .permutations(amplifier_count)
             .map(|permutation| {
                 let mut input = 0;
 
                 for phase in &permutation {
-                    // let phase = permutation[i];
                     input = run_program_with_inputs(
                         &self.code,
-                        &[Some(*phase as i64), Some(input)],
+                        &[Some((*phase as i64)), Some(input)],
                     )
                     .output();
                 }
@@ -93,7 +111,36 @@ impl Program {
             .unwrap()
     }
 
-    pub fn run(mut self) -> Program {
+    pub fn find_best_phase_settings_in_feedback_loop_mode(&self, amplifier_count: usize) -> (Vec<usize>, i64) {
+        (5..5 + amplifier_count)
+            .permutations(amplifier_count)
+            .map(|permutation| {
+                println!("permutation: {:?}", permutation);
+                let mut input = 0;
+
+                for phase in &permutation {
+                    // let modified_phase = Some(
+                    //     (*phase as i64) +
+                    //     (amplifier_count * (1 - 1)) as i64
+                    // );
+                    // input = run_program_with_inputs(
+                    //     &self.code,
+                    //     &[modified_phase, Some(input)],
+                    // )
+                    input = run_program_with_inputs(
+                        &self.code,
+                        &[Some((*phase as i64)), Some(input)],
+                    )
+                    .output();
+                }
+
+                (permutation, input)
+            })
+            .max_by_key(|(_, power)| *power)
+            .unwrap()
+    }
+
+    pub fn run<'a>(mut self) -> Program {
         let mut opcode: Opcode;
 
         loop {
@@ -219,8 +266,8 @@ struct Instruction<'a> {
     pos: usize,
 }
 
-impl Instruction<'_> {
-    fn new(program: &mut Program, opcode: Opcode) -> Instruction<'_> {
+impl<'a> Instruction<'a> {
+    fn new(program: &'a mut Program, opcode: Opcode) -> Instruction<'a> {
         Instruction {
             program,
             opcode,
@@ -230,7 +277,7 @@ impl Instruction<'_> {
         }
     }
 
-    pub fn init(&mut self, pos: usize) -> &Instruction<'_> {
+    pub fn init(&mut self, pos: usize) -> &Instruction<'a> {
         self.pos = pos;
 
         let mut indexes = Vec::new();
@@ -304,7 +351,12 @@ impl Instruction<'_> {
             }
             // input
             3 => {
-                let input = self.program.inputs.remove(0);
+                // if self.program.inputs.is_empty() {
+                //     panic!("Input was expected but is not available.");
+                // }
+                // let input = self.program.inputs.remove(0);
+                // let input = Some(9999);
+                let input = self.program.inputs.next().unwrap();
                 // println!("input: {:?}", input);
                 // println!("(inputs left): {:?}", self.program.inputs);
 
@@ -365,7 +417,10 @@ impl Instruction<'_> {
                 Some(self.pos + self.opcode.length)
             }
             // halt
-            99 => Default::default(),
+            99 => {
+                self.program.stopped = true;
+                Default::default()
+            }
             _ => Default::default(),
         }
     }
@@ -557,5 +612,35 @@ mod test {
         let best3 = prog3.find_best_phase_settings(5);
         assert_eq!(best3.0, vec![1, 0, 4, 3, 2]);
         assert_eq!(best3.1, 65210);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_find_best_phase_settings_in_feedback_loop_mode() {
+        let program: &[i64] = &[
+            3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5
+        ];
+        let prog = Program::from(program);
+        let best = prog.find_best_phase_settings_in_feedback_loop_mode(5);
+        assert_eq!(best.0, vec![9,8,7,6,5]);
+        assert_eq!(best.1, 139_629_729);
+
+        // let program2: &[i64] = &[
+        //     3, 23, 3, 24, 1002, 24, 10, 24, 1002, 23, -1, 23, 101, 5, 23, 23, 1, 24, 23,
+        //     23, 4, 23, 99, 0, 0,
+        // ];
+        // let prog2 = Program::from(program2);
+        // let best2 = prog2.find_best_phase_settings(5);
+        // assert_eq!(best2.0, vec![0, 1, 2, 3, 4]);
+        // assert_eq!(best2.1, 54321);
+        //
+        // let program3: &[i64] = &[
+        //     3, 31, 3, 32, 1002, 32, 10, 32, 1001, 31, -2, 31, 1007, 31, 0, 33, 1002, 33,
+        //     7, 33, 1, 33, 31, 31, 1, 32, 31, 31, 4, 31, 99, 0, 0, 0,
+        // ];
+        // let prog3 = Program::from(program3);
+        // let best3 = prog3.find_best_phase_settings(5);
+        // assert_eq!(best3.0, vec![1, 0, 4, 3, 2]);
+        // assert_eq!(best3.1, 65210);
     }
 }
