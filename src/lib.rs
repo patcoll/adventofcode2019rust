@@ -51,7 +51,7 @@ mod test {
 
         let result = program::run_program(&program);
 
-        assert_eq!(result[0], 9_706_670);
+        assert_eq!(result.code[0], 9_706_670);
     }
 
     #[test]
@@ -64,7 +64,7 @@ mod test {
 
         let result = program::run_program_with_noun_and_verb(&program, 12, 2);
 
-        assert_eq!(result[0], 9_706_670);
+        assert_eq!(result.code[0], 9_706_670);
     }
 
     #[test]
@@ -186,11 +186,7 @@ mod test {
             .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
-        if let (_, Some(out)) =
-            program::run_program_with_input_instruction(&program, Some(1))
-        {
-            assert_eq!(out, 16_574_641);
-        }
+        assert_eq!(program::run_program_with_input(&program, Some(1)).output(), 16_574_641);
     }
 
     #[test]
@@ -201,11 +197,7 @@ mod test {
             .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
-        if let (_, Some(out)) =
-            program::run_program_with_input_instruction(&program, Some(5))
-        {
-            assert_eq!(out, 15_163_975);
-        }
+        assert_eq!(program::run_program_with_input(&program, Some(5)).output(), 15_163_975);
     }
 
     #[test]
