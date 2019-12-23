@@ -47,14 +47,14 @@ impl Program {
         }
     }
 
-    fn get_at_position(&self, pos: usize) -> Option<i64> {
+    fn get(&self, pos: usize) -> Option<i64> {
         match pos {
             p if p >= self.code.len() => None,
             _ => Some(self.code[pos]),
         }
     }
 
-    pub fn set_at_position(&mut self, pos: usize, value: i64) -> Option<i64> {
+    pub fn set(&mut self, pos: usize, value: i64) -> Option<i64> {
         match pos {
             p if p >= self.code.len() => None,
             _ => {
@@ -206,7 +206,7 @@ impl Instruction<'_> {
 
         for (mode_pos, mode) in self.opcode.modes.iter().enumerate() {
             let parameter_number = mode_pos + 1;
-            let value_at_pos = self.program.get_at_position(self.pos + parameter_number);
+            let value_at_pos = self.program.get(self.pos + parameter_number);
 
             let (index, value) = match *mode {
                 POSITION_MODE => {
@@ -219,10 +219,10 @@ impl Instruction<'_> {
                     // println!("index: {:?}", index);
 
                     let value = if let Some(i) = index {
-                        self.program.get_at_position(i)
+                        self.program.get(i)
                     // if i < program.len() {
-                    //     self.program.get_at_position(i)
-                    //     Some(self.program.get_at_position(i))
+                    //     self.program.get(i)
+                    //     Some(self.program.get(i))
                     // // match (self.opcode.number, parameter_number) {
                     // //     // (1, 3) | (2, 3) => value_at_pos,
                     // //     _ => Some(program[i]),
@@ -281,7 +281,7 @@ impl Instruction<'_> {
             1 => {
                 if let [Some(first), Some(second), _] = self.values.as_slice() {
                     if let [_, _, Some(result_index)] = self.indexes.as_slice() {
-                        self.program.set_at_position(*result_index, first + second);
+                        self.program.set(*result_index, first + second);
                     }
                 };
 
@@ -290,7 +290,7 @@ impl Instruction<'_> {
             2 => {
                 if let [Some(first), Some(second), _] = self.values.as_slice() {
                     if let [_, _, Some(result_index)] = self.indexes.as_slice() {
-                        self.program.set_at_position(*result_index, first * second);
+                        self.program.set(*result_index, first * second);
                     }
                 };
 
@@ -313,7 +313,7 @@ impl Instruction<'_> {
 
                 if let [Some(result_index)] = self.indexes.as_slice() {
                     // self.program.code[*result_index] = input.unwrap();
-                    self.program.set_at_position(*result_index, input.unwrap());
+                    self.program.set(*result_index, input.unwrap());
                 };
 
                 // let result_index = self.indexes[0].unwrap();
@@ -352,7 +352,7 @@ impl Instruction<'_> {
             // less than
             7 => {
                 if let [_, _, Some(store_pos)] = self.indexes.as_slice() {
-                    self.program.set_at_position(
+                    self.program.set(
                         (*store_pos) as usize,
                         // input.unwrap()
                         match self.values.as_slice() {
@@ -375,7 +375,7 @@ impl Instruction<'_> {
                     //     [Some(first), Some(second), _] if *first == *second => 1,
                     //     _ => 0,
                     // };
-                    self.program.set_at_position(
+                    self.program.set(
                         (*store_pos) as usize,
                         // input.unwrap()
                         match self.values.as_slice() {
@@ -392,13 +392,6 @@ impl Instruction<'_> {
         }
     }
 }
-
-// fn get_at_position(program: &[i64], pos: usize) -> Option<i64> {
-//     match pos {
-//         p if p >= program.len() => None,
-//         _ => Some(program[pos]),
-//     }
-// }
 
 pub fn run_program(original: &[i64]) -> Program {
     run_program_with_input(original, None)
@@ -417,7 +410,7 @@ pub fn run_program_with_inputs(original: &[i64], inputs: &[Option<i64>]) -> Prog
     // let mut output = None;
 
     loop {
-        let opcode_value = prog.get_at_position(pos).unwrap();
+        let opcode_value = prog.get(pos).unwrap();
         opcode = Opcode::from(opcode_value);
         // println!("opcode: {:?}", opcode);
         let mut instruction = Instruction::new(&mut prog, opcode);
