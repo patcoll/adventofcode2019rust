@@ -24,6 +24,8 @@ lazy_static! {
 }
 
 #[derive(Debug)]
+// TODO: Implement Clone
+// TODO: Implement Default
 pub struct Program {
     pub code: Vec<i64>,
     pub sender: Sender<Option<i64>>,
@@ -158,6 +160,7 @@ impl Program {
 
         (5..5 + amplifier_count)
             .permutations(amplifier_count)
+            // TODO: into_par_iter
             .into_iter()
             .map(|permutation| {
                 // println!("i: {:?}", i);
@@ -166,7 +169,7 @@ impl Program {
                     .map(|_| Program::from(self.code.clone().as_slice()))
                     .collect::<Vec<_>>();
 
-                println!("amplifiers: {:?}", amplifiers);
+                // println!("amplifiers: {:?}", amplifiers);
 
                 // Send phase values.
                 for (k, phase) in (&permutation).iter().enumerate() {
@@ -176,7 +179,7 @@ impl Program {
 
                     // let index = k % amplifier_count;
 
-                    println!("sent phase {:?} to amplifier {:?}", Some(*phase as i64), amplifier_number);
+                    // println!("sent phase {:?} to amplifier {:?}", Some(*phase as i64), amplifier_number);
 
                     program.sender.send(Some(*phase as i64)).unwrap();
 
@@ -207,15 +210,17 @@ impl Program {
                     let program = &mut amplifiers[amplifier_number];
 
                     // run
-                    println!("input ({:?}) to amplifier {:?}", input, amplifier_number);
+                    // println!("input ({:?}) to amplifier {:?}", input, amplifier_number);
                     program.sender.send(input).unwrap();
 
                     program.run();
 
                     input = program.output();
 
-                    println!("output ({:?}) from amplifier {:?}", input, amplifier_number);
+                    // println!("output ({:?}) from amplifier {:?}", input, amplifier_number);
 
+                    // TODO: Allow amplifiers to finish in order from A to E instead of detecting
+                    // last one in `loop` construct.
                     if amplifier_number == amplifier_count - 1 && program.is_finished() {
                         break;
                     }
@@ -223,7 +228,7 @@ impl Program {
                     j += 1;
                 }
 
-                println!("output: {:?} for permutation: {:?}", input, permutation);
+                // println!("output: {:?} for permutation: {:?}", input, permutation);
 
                 (permutation, input)
             })
@@ -296,8 +301,8 @@ impl Program {
                 None => break,
             }
 
-            println!("program: {:?}", self.code);
-            println!();
+            // println!("program: {:?}", self.code);
+            // println!();
         }
 
         // println!("output: {:?}", prog.output);
@@ -530,7 +535,7 @@ impl<'a> Instruction<'a> {
                 match self.program.receiver.try_recv() {
                     Ok(input) => {
                         if let [Some(result_index)] = self.indexes.as_slice() {
-                            println!("Input ({:?}) going to index {:?}. pos: {:?}", input, result_index, self.pos);
+                            // println!("Input ({:?}) going to index {:?}. pos: {:?}", input, result_index, self.pos);
                             self.program.set(*result_index, input.unwrap());
                         };
 
@@ -538,7 +543,7 @@ impl<'a> Instruction<'a> {
                     },
                     Err(TryRecvError::Empty) => {
                         // This is valid. Stop program at this instruction.
-                        println!("Input empty. Stopped program at {:?}", self.pos);
+                        // println!("Input empty. Stopped program at {:?}", self.pos);
 
                         self.program.finished = false;
 
@@ -612,7 +617,7 @@ impl<'a> Instruction<'a> {
             99 => {
                 self.program.finish();
 
-                println!("Program finished. Stopped program at {:?}", self.pos);
+                // println!("Program finished. Stopped program at {:?}", self.pos);
 
                 None
             }
@@ -820,7 +825,7 @@ mod test {
         ];
         let prog = Program::from(program);
         let best = prog.find_best_phase_settings_in_feedback_loop_mode(5);
-        println!("best: {:?}", best);
+        // println!("best: {:?}", best);
         assert_eq!(best.0, vec![9, 8, 7, 6, 5]);
         assert_eq!(best.1.unwrap(), 139_629_729);
 
