@@ -123,10 +123,13 @@ impl Program {
             return None;
             // panic!("Expected output");
         }
-        self.output[self.output.len() - 1]//.unwrap()
+        self.output[self.output.len() - 1] //.unwrap()
     }
 
-    pub fn find_best_phase_settings(&self, amplifier_count: usize) -> (Vec<usize>, Option<i64>) {
+    pub fn find_best_phase_settings(
+        &self,
+        amplifier_count: usize,
+    ) -> (Vec<usize>, Option<i64>) {
         // self.find_best_phase_settings_with_loop_count(amplifier_count, 1)
         (0..amplifier_count)
             .permutations(amplifier_count)
@@ -134,10 +137,8 @@ impl Program {
                 let mut input = Some(0);
 
                 for phase in &permutation {
-                    let mut program = Program::new(
-                        &self.code,
-                        &[Some(*phase as i64), input],
-                    );
+                    let mut program =
+                        Program::new(&self.code, &[Some(*phase as i64), input]);
                     program.run();
                     input = program.output();
                 }
@@ -152,8 +153,6 @@ impl Program {
         &self,
         amplifier_count: usize,
     ) -> (Vec<usize>, Option<i64>) {
-
-
         // (0..amplifier_count)
         //     .permutations(amplifier_count)
         //     .map(|permutation| {
@@ -235,7 +234,6 @@ impl Program {
             .max_by_key(|(_, power)| *power)
             .unwrap()
 
-
         // let mut perm = vec![];
 
         // Program::from(self.code).run()
@@ -310,7 +308,11 @@ impl Program {
     }
 }
 
-pub fn compose_program_with_noun_and_verb(original: Vec<i64>, noun: i64, verb: i64) -> Vec<i64> {
+pub fn compose_program_with_noun_and_verb(
+    original: Vec<i64>,
+    noun: i64,
+    verb: i64,
+) -> Vec<i64> {
     let mut prog = original.to_owned();
     prog[1] = noun;
     prog[2] = verb;
@@ -333,9 +335,7 @@ pub fn compose_program_with_noun_and_verb(original: Vec<i64>, noun: i64, verb: i
 //     result.code[0]
 // }
 
-pub fn run_program_and_get_output(
-    original: &[i64],
-) -> i64 {
+pub fn run_program_and_get_output(original: &[i64]) -> i64 {
     let result = run_program(original);
     result.code[0]
 }
@@ -540,7 +540,7 @@ impl<'a> Instruction<'a> {
                         };
 
                         Some(self.pos + self.opcode.length)
-                    },
+                    }
                     Err(TryRecvError::Empty) => {
                         // This is valid. Stop program at this instruction.
                         // println!("Input empty. Stopped program at {:?}", self.pos);
@@ -549,8 +549,8 @@ impl<'a> Instruction<'a> {
 
                         // Send `None` so program can stop.
                         None
-                    },
-                    Err(_) => panic!("Channel unexpectedly closed")
+                    }
+                    Err(_) => panic!("Channel unexpectedly closed"),
                 }
                 // let input = self.program.receiver.try_recv().unwrap();
                 // // println!("input: {:?}", input);
@@ -647,7 +647,12 @@ mod test {
     #[test]
     fn test_run_program_with_inputs() {
         let program = vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8];
-        assert_eq!(run_program_with_inputs(&program, &[Some(8)]).output().unwrap(), 1);
+        assert_eq!(
+            run_program_with_inputs(&program, &[Some(8)])
+                .output()
+                .unwrap(),
+            1
+        );
     }
 
     #[test]
@@ -660,14 +665,30 @@ mod test {
         // immediate mode
         let i_program = vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8];
 
-        assert_eq!(run_program_with_input(&program, Some(8)).output().unwrap(), 1);
+        assert_eq!(
+            run_program_with_input(&program, Some(8)).output().unwrap(),
+            1
+        );
 
-        assert_eq!(run_program_with_input(&i_program, Some(8)).output().unwrap(), 1);
+        assert_eq!(
+            run_program_with_input(&i_program, Some(8))
+                .output()
+                .unwrap(),
+            1
+        );
 
         (0..20).filter(|n| *n != 8).for_each(|n| {
-            assert_eq!(run_program_with_input(&program, Some(n)).output().unwrap(), 0);
+            assert_eq!(
+                run_program_with_input(&program, Some(n)).output().unwrap(),
+                0
+            );
 
-            assert_eq!(run_program_with_input(&i_program, Some(n)).output().unwrap(), 0);
+            assert_eq!(
+                run_program_with_input(&i_program, Some(n))
+                    .output()
+                    .unwrap(),
+                0
+            );
         });
     }
 
@@ -681,14 +702,30 @@ mod test {
         // immediate mode
         let i_program = vec![3, 3, 1107, -1, 8, 3, 4, 3, 99];
 
-        assert_eq!(run_program_with_input(&program, Some(7)).output().unwrap(), 1);
+        assert_eq!(
+            run_program_with_input(&program, Some(7)).output().unwrap(),
+            1
+        );
 
-        assert_eq!(run_program_with_input(&i_program, Some(7)).output().unwrap(), 1);
+        assert_eq!(
+            run_program_with_input(&i_program, Some(7))
+                .output()
+                .unwrap(),
+            1
+        );
 
         (0..20).filter(|n| *n >= 8).for_each(|n| {
-            assert_eq!(run_program_with_input(&program, Some(n)).output().unwrap(), 0);
+            assert_eq!(
+                run_program_with_input(&program, Some(n)).output().unwrap(),
+                0
+            );
 
-            assert_eq!(run_program_with_input(&i_program, Some(n)).output().unwrap(), 0);
+            assert_eq!(
+                run_program_with_input(&i_program, Some(n))
+                    .output()
+                    .unwrap(),
+                0
+            );
         });
     }
 
@@ -697,13 +734,29 @@ mod test {
         let program = vec![3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
         let i_program = vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1];
 
-        assert_eq!(run_program_with_input(&program, Some(0)).output().unwrap(), 0);
+        assert_eq!(
+            run_program_with_input(&program, Some(0)).output().unwrap(),
+            0
+        );
 
-        assert_eq!(run_program_with_input(&i_program, Some(0)).output().unwrap(), 0);
+        assert_eq!(
+            run_program_with_input(&i_program, Some(0))
+                .output()
+                .unwrap(),
+            0
+        );
 
-        assert_eq!(run_program_with_input(&program, Some(1)).output().unwrap(), 1);
+        assert_eq!(
+            run_program_with_input(&program, Some(1)).output().unwrap(),
+            1
+        );
 
-        assert_eq!(run_program_with_input(&i_program, Some(1)).output().unwrap(), 1);
+        assert_eq!(
+            run_program_with_input(&i_program, Some(1))
+                .output()
+                .unwrap(),
+            1
+        );
     }
 
     #[test]
@@ -711,13 +764,29 @@ mod test {
         let program = vec![3, 12, 5, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
         let i_program = vec![3, 3, 1106, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1];
 
-        assert_eq!(run_program_with_input(&program, Some(0)).output().unwrap(), 1);
+        assert_eq!(
+            run_program_with_input(&program, Some(0)).output().unwrap(),
+            1
+        );
 
-        assert_eq!(run_program_with_input(&i_program, Some(0)).output().unwrap(), 1);
+        assert_eq!(
+            run_program_with_input(&i_program, Some(0))
+                .output()
+                .unwrap(),
+            1
+        );
 
-        assert_eq!(run_program_with_input(&program, Some(1)).output().unwrap(), 0);
+        assert_eq!(
+            run_program_with_input(&program, Some(1)).output().unwrap(),
+            0
+        );
 
-        assert_eq!(run_program_with_input(&i_program, Some(1)).output().unwrap(), 0);
+        assert_eq!(
+            run_program_with_input(&i_program, Some(1))
+                .output()
+                .unwrap(),
+            0
+        );
     }
 
     #[test]
@@ -728,11 +797,20 @@ mod test {
             1101, 1000, 1, 20, 4, 20, 1105, 1, 46, 98, 99,
         ];
 
-        assert_eq!(run_program_with_input(&program, Some(7)).output().unwrap(), 999);
+        assert_eq!(
+            run_program_with_input(&program, Some(7)).output().unwrap(),
+            999
+        );
 
-        assert_eq!(run_program_with_input(&program, Some(8)).output().unwrap(), 1000);
+        assert_eq!(
+            run_program_with_input(&program, Some(8)).output().unwrap(),
+            1000
+        );
 
-        assert_eq!(run_program_with_input(&program, Some(9)).output().unwrap(), 1001);
+        assert_eq!(
+            run_program_with_input(&program, Some(9)).output().unwrap(),
+            1001
+        );
     }
 
     #[test]
@@ -761,27 +839,37 @@ mod test {
 
         // phase settings: 4,3,2,1,0
         assert_eq!(
-            run_program_with_inputs(&program, &[Some(4), Some(0)]).output().unwrap(),
+            run_program_with_inputs(&program, &[Some(4), Some(0)])
+                .output()
+                .unwrap(),
             4
         );
 
         assert_eq!(
-            run_program_with_inputs(&program, &[Some(3), Some(4)]).output().unwrap(),
+            run_program_with_inputs(&program, &[Some(3), Some(4)])
+                .output()
+                .unwrap(),
             43
         );
 
         assert_eq!(
-            run_program_with_inputs(&program, &[Some(2), Some(43)]).output().unwrap(),
+            run_program_with_inputs(&program, &[Some(2), Some(43)])
+                .output()
+                .unwrap(),
             432
         );
 
         assert_eq!(
-            run_program_with_inputs(&program, &[Some(1), Some(432)]).output().unwrap(),
+            run_program_with_inputs(&program, &[Some(1), Some(432)])
+                .output()
+                .unwrap(),
             4321
         );
 
         assert_eq!(
-            run_program_with_inputs(&program, &[Some(0), Some(4321)]).output().unwrap(),
+            run_program_with_inputs(&program, &[Some(0), Some(4321)])
+                .output()
+                .unwrap(),
             43210
         );
     }

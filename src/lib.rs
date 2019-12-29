@@ -190,7 +190,9 @@ mod test {
             .collect();
 
         assert_eq!(
-            program::run_program_with_input(&program, Some(1)).output().unwrap(),
+            program::run_program_with_input(&program, Some(1))
+                .output()
+                .unwrap(),
             16_574_641
         );
     }
@@ -204,7 +206,9 @@ mod test {
             .collect();
 
         assert_eq!(
-            program::run_program_with_input(&program, Some(5)).output().unwrap(),
+            program::run_program_with_input(&program, Some(5))
+                .output()
+                .unwrap(),
             15_163_975
         );
     }
