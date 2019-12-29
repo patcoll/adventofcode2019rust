@@ -63,7 +63,8 @@ mod test {
             .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
-        let result = program::run_program_with_noun_and_verb(&program, 12, 2);
+        let composed = program::compose_program_with_noun_and_verb(program, 12, 2);
+        let result = program::run_program(&composed);
 
         assert_eq!(result.code[0], 9_706_670);
     }
@@ -189,7 +190,7 @@ mod test {
             .collect();
 
         assert_eq!(
-            program::run_program_with_input(&program, Some(1)).output(),
+            program::run_program_with_input(&program, Some(1)).output().unwrap(),
             16_574_641
         );
     }
@@ -203,7 +204,7 @@ mod test {
             .collect();
 
         assert_eq!(
-            program::run_program_with_input(&program, Some(5)).output(),
+            program::run_program_with_input(&program, Some(5)).output().unwrap(),
             15_163_975
         );
     }
@@ -242,6 +243,6 @@ mod test {
         let best = prog.find_best_phase_settings(5);
 
         assert_eq!(best.0, vec![2, 1, 4, 3, 0]);
-        assert_eq!(best.1, 118_936);
+        assert_eq!(best.1.unwrap(), 118_936);
     }
 }

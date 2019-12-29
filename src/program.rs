@@ -2,7 +2,7 @@ use crate::code::Digits;
 use itertools::Itertools;
 use rayon::prelude::*;
 use std::collections::HashMap;
-use std::sync::mpsc::{channel, IntoIter, Sender};
+use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 
 const POSITION_MODE: u32 = 0;
 const IMMEDIATE_MODE: u32 = 1;
@@ -27,30 +27,54 @@ lazy_static! {
 pub struct Program {
     pub code: Vec<i64>,
     pub sender: Sender<Option<i64>>,
-    pub inputs: IntoIter<Option<i64>>,
+    pub receiver: Receiver<Option<i64>>,
+    // pub inputs: IntoIter<Option<i64>>,
     pub output: Vec<Option<i64>>,
     pub pos: usize,
-    pub stopped: bool,
+    pub finished: bool,
 }
 
 impl From<&[i64]> for Program {
     fn from(code: &[i64]) -> Self {
-        let (sender, recv) = channel();
+        let (sender, receiver) = channel();
 
         Program {
             code: code.to_owned(),
             sender,
-            inputs: recv.into_iter(),
+            receiver,
+            // inputs: receiver.into_iter(),
             output: vec![],
             pos: 0,
-            stopped: false,
+            finished: false,
         }
     }
 }
 
+// impl From<Vec<i64>> for Program {
+//     fn from(code: Vec<i64>) -> Self {
+//         let (sender, receiver) = channel();
+//
+//         Program {
+//             code,
+//             sender,
+//             receiver,
+//             // inputs: receiver.into_iter(),
+//             output: vec![],
+//             pos: 0,
+//             finished: false,
+//         }
+//     }
+// }
+
 impl Program {
+    // pub fn send_input(i64) -> Result<i64> {
+    // }
+    //
+    // pub fn recv_input() -> Result<i64, > {
+    // }
+
     fn new(code: &[i64], inputs: &[Option<i64>]) -> Program {
-        let (sender, recv) = channel();
+        let (sender, receiver) = channel();
 
         for input in inputs {
             sender.send(input.clone()).unwrap();
@@ -59,11 +83,20 @@ impl Program {
         Program {
             code: code.to_owned(),
             sender,
-            inputs: recv.into_iter(),
+            receiver,
+            // inputs: receiver.into_iter(),
             output: vec![],
             pos: 0,
-            stopped: false,
+            finished: false,
         }
+    }
+
+    pub fn finish(&mut self) -> () {
+        self.finished = true;
+    }
+
+    pub fn is_finished(&self) -> bool {
+        self.finished
     }
 
     fn get(&self, pos: usize) -> Option<i64> {
@@ -83,26 +116,28 @@ impl Program {
         }
     }
 
-    pub fn output(&self) -> i64 {
+    pub fn output(&self) -> Option<i64> {
         if self.output.is_empty() || self.output[self.output.len() - 1].is_none() {
-            panic!("Expected output");
+            return None;
+            // panic!("Expected output");
         }
-        self.output[self.output.len() - 1].unwrap()
+        self.output[self.output.len() - 1]//.unwrap()
     }
 
-    pub fn find_best_phase_settings(&self, amplifier_count: usize) -> (Vec<usize>, i64) {
+    pub fn find_best_phase_settings(&self, amplifier_count: usize) -> (Vec<usize>, Option<i64>) {
         // self.find_best_phase_settings_with_loop_count(amplifier_count, 1)
         (0..amplifier_count)
             .permutations(amplifier_count)
             .map(|permutation| {
-                let mut input = 0;
+                let mut input = Some(0);
 
                 for phase in &permutation {
-                    input = run_program_with_inputs(
+                    let mut program = Program::new(
                         &self.code,
-                        &[Some(*phase as i64), Some(input)],
-                    )
-                    .output();
+                        &[Some(*phase as i64), input],
+                    );
+                    program.run();
+                    input = program.output();
                 }
 
                 (permutation, input)
@@ -114,14 +149,37 @@ impl Program {
     pub fn find_best_phase_settings_in_feedback_loop_mode(
         &self,
         amplifier_count: usize,
-    ) -> (Vec<usize>, i64) {
+    ) -> (Vec<usize>, Option<i64>) {
+
+
+        // (0..amplifier_count)
+        //     .permutations(amplifier_count)
+        //     .map(|permutation| {
+
         (5..5 + amplifier_count)
             .permutations(amplifier_count)
+            .into_iter()
             .map(|permutation| {
-                println!("permutation: {:?}", permutation);
-                let mut input = 0;
+                // println!("i: {:?}", i);
+                // perm = permutation;
+                let mut amplifiers = (0..amplifier_count)
+                    .map(|_| Program::from(self.code.clone().as_slice()))
+                    .collect::<Vec<_>>();
 
-                for phase in &permutation {
+                println!("amplifiers: {:?}", amplifiers);
+
+                // Send phase values.
+                for (k, phase) in (&permutation).iter().enumerate() {
+                    let amplifier_number = k % amplifier_count;
+
+                    let program = &mut amplifiers[amplifier_number];
+
+                    // let index = k % amplifier_count;
+
+                    println!("sent phase {:?} to amplifier {:?}", Some(*phase as i64), amplifier_number);
+
+                    program.sender.send(Some(*phase as i64)).unwrap();
+
                     // let modified_phase = Some(
                     //     (*phase as i64) +
                     //     (amplifier_count * (1 - 1)) as i64
@@ -130,20 +188,96 @@ impl Program {
                     //     &self.code,
                     //     &[modified_phase, Some(input)],
                     // )
-                    input = run_program_with_inputs(
-                        &self.code,
-                        &[Some(*phase as i64), Some(input)],
-                    )
-                    .output();
+                    // input = run_program_with_inputs(
+                    //     &self.code,
+                    //     &[Some(*phase as i64), Some(input)],
+                    //     )
+                    //     .output();
                 }
+
+                // println!("amplifiers: {:?}", amplifiers);
+
+                let mut input = Some(0);
+
+                let mut j = 0;
+
+                loop {
+                    let amplifier_number = j % amplifier_count;
+
+                    let program = &mut amplifiers[amplifier_number];
+
+                    // run
+                    println!("input ({:?}) to amplifier {:?}", input, amplifier_number);
+                    program.sender.send(input).unwrap();
+
+                    program.run();
+
+                    input = program.output();
+
+                    println!("output ({:?}) from amplifier {:?}", input, amplifier_number);
+
+                    if amplifier_number == amplifier_count - 1 && program.is_finished() {
+                        break;
+                    }
+
+                    j += 1;
+                }
+
+                println!("output: {:?} for permutation: {:?}", input, permutation);
 
                 (permutation, input)
             })
             .max_by_key(|(_, power)| *power)
             .unwrap()
+
+
+        // let mut perm = vec![];
+
+        // Program::from(self.code).run()
+
+        // for (i, permutation) in (5..5 + amplifier_count).permutations(amplifier_count).into_iter().enumerate() {
+        // }
+        //
+        // (vec![], Some(9999))
+        //
+        //
+        //
+        //
+        //
+        // // (5..5 + amplifier_count)
+        // //     .permutations(amplifier_count)
+        // //     .map(|permutation| {
+        // //         println!("permutation: {:?}", permutation);
+        // //         let mut input = 0;
+        // //
+        // //         for phase in &permutation {
+        // //             // let modified_phase = Some(
+        // //             //     (*phase as i64) +
+        // //             //     (amplifier_count * (1 - 1)) as i64
+        // //             // );
+        // //             // input = run_program_with_inputs(
+        // //             //     &self.code,
+        // //             //     &[modified_phase, Some(input)],
+        // //             // )
+        // //             input = run_program_with_inputs(
+        // //                 &self.code,
+        // //                 &[Some(*phase as i64), Some(input)],
+        // //             )
+        // //             .output();
+        // //         }
+        // //
+        // //         (permutation, input)
+        // //     })
+        // //     .max_by_key(|(_, power)| *power)
+        // //     .unwrap()
+        //
+        //
+        //
+        //
+        //
     }
 
-    pub fn run(mut self) -> Program {
+    pub fn run(&mut self) -> bool {
         let mut opcode: Opcode;
 
         loop {
@@ -152,7 +286,7 @@ impl Program {
             opcode = Opcode::from(opcode_value);
             // println!("opcode: {:?}", opcode);
 
-            let mut instruction = Instruction::new(&mut self, opcode);
+            let mut instruction = Instruction::new(self, opcode);
             instruction.init(pos);
 
             match instruction.run() {
@@ -162,28 +296,42 @@ impl Program {
                 None => break,
             }
 
-            // println!("program: {:?}", prog.code);
-            // println!();
+            println!("program: {:?}", self.code);
+            println!();
         }
 
         // println!("output: {:?}", prog.output);
-        self
+        self.is_finished()
     }
 }
 
-pub fn run_program_with_noun_and_verb(original: &[i64], noun: i64, verb: i64) -> Program {
-    let mut program = original.to_owned();
-    program[1] = noun;
-    program[2] = verb;
-    run_program(&program)
+pub fn compose_program_with_noun_and_verb(original: Vec<i64>, noun: i64, verb: i64) -> Vec<i64> {
+    let mut prog = original.to_owned();
+    prog[1] = noun;
+    prog[2] = verb;
+    prog
 }
 
-pub fn run_program_with_noun_and_verb_and_get_output(
+// pub fn run_program_with_noun_and_verb(original: &[i64], noun: i64, verb: i64) -> &Program {
+//     // let mut program = original.to_owned();
+//     original[1] = noun;
+//     original[2] = verb;
+//     run_program(&original)
+// }
+
+// pub fn run_program_with_noun_and_verb_and_get_output(
+//     original: &[i64],
+//     noun: i64,
+//     verb: i64,
+// ) -> i64 {
+//     let result = run_program_with_noun_and_verb(original, noun, verb);
+//     result.code[0]
+// }
+
+pub fn run_program_and_get_output(
     original: &[i64],
-    noun: i64,
-    verb: i64,
 ) -> i64 {
-    let result = run_program_with_noun_and_verb(original, noun, verb);
+    let result = run_program(original);
     result.code[0]
 }
 
@@ -195,7 +343,8 @@ pub fn run_program_to_get_output(
         (0..=99).permutations(2).map(|v| (v[0], v[1])).collect();
 
     permutations.into_par_iter().find_first(|(i, j)| {
-        run_program_with_noun_and_verb_and_get_output(original, *i, *j) == desired_output
+        let composed = compose_program_with_noun_and_verb(original.to_owned(), *i, *j);
+        run_program_and_get_output(&composed) == desired_output
     })
 }
 
@@ -207,8 +356,16 @@ pub fn run_program_with_input(original: &[i64], input: Option<i64>) -> Program {
     run_program_with_inputs(original, &[input])
 }
 
+// pub fn run_existing_program_with_input(program: &mut Program, input: Option<i64>) -> bool {
+//     program.sender.send(input).unwrap();
+//     program.run();
+//     program.is_finished()
+// }
+
 pub fn run_program_with_inputs(original: &[i64], inputs: &[Option<i64>]) -> Program {
-    Program::new(original, inputs).run()
+    let mut program = Program::new(original, inputs);
+    program.run();
+    program
 }
 
 #[derive(Debug, Default)]
@@ -336,6 +493,11 @@ impl<'a> Instruction<'a> {
             1 => {
                 if let [Some(first), Some(second), _] = self.values.as_slice() {
                     if let [_, _, Some(result_index)] = self.indexes.as_slice() {
+                        // println!("add");
+                        // println!("first: {:?}", first);
+                        // println!("second: {:?}", second);
+                        // println!("result: {:?}", first + second);
+                        // println!("result_index: {:?}", result_index);
                         self.program.set(*result_index, first + second);
                     }
                 };
@@ -346,6 +508,11 @@ impl<'a> Instruction<'a> {
             2 => {
                 if let [Some(first), Some(second), _] = self.values.as_slice() {
                     if let [_, _, Some(result_index)] = self.indexes.as_slice() {
+                        // println!("multiply");
+                        // println!("first: {:?}", first);
+                        // println!("second: {:?}", second);
+                        // println!("result: {:?}", first * second);
+                        // println!("result_index: {:?}", result_index);
                         self.program.set(*result_index, first * second);
                     }
                 };
@@ -354,23 +521,45 @@ impl<'a> Instruction<'a> {
             }
             // input
             3 => {
+                // println!("input");
                 // if self.program.inputs.is_empty() {
                 //     panic!("Input was expected but is not available.");
                 // }
                 // let input = self.program.inputs.remove(0);
                 // let input = Some(9999);
-                let input = self.program.inputs.next().unwrap();
-                // println!("input: {:?}", input);
-                // println!("(inputs left): {:?}", self.program.inputs);
+                match self.program.receiver.try_recv() {
+                    Ok(input) => {
+                        if let [Some(result_index)] = self.indexes.as_slice() {
+                            println!("Input ({:?}) going to index {:?}. pos: {:?}", input, result_index, self.pos);
+                            self.program.set(*result_index, input.unwrap());
+                        };
 
-                if let [Some(result_index)] = self.indexes.as_slice() {
-                    self.program.set(*result_index, input.unwrap());
-                };
+                        Some(self.pos + self.opcode.length)
+                    },
+                    Err(TryRecvError::Empty) => {
+                        // This is valid. Stop program at this instruction.
+                        println!("Input empty. Stopped program at {:?}", self.pos);
 
-                Some(self.pos + self.opcode.length)
+                        self.program.finished = false;
+
+                        // Send `None` so program can stop.
+                        None
+                    },
+                    Err(_) => panic!("Channel unexpectedly closed")
+                }
+                // let input = self.program.receiver.try_recv().unwrap();
+                // // println!("input: {:?}", input);
+                // // println!("(inputs left): {:?}", self.program.inputs);
+                //
+                // if let [Some(result_index)] = self.indexes.as_slice() {
+                //     self.program.set(*result_index, input.unwrap());
+                // };
+                //
+                // Some(self.pos + self.opcode.length)
             }
             // output
             4 => {
+                // println!("output");
                 if let [Some(out)] = self.values.as_slice() {
                     println!("[program::out]: {}", out);
 
@@ -421,10 +610,13 @@ impl<'a> Instruction<'a> {
             }
             // halt
             99 => {
-                self.program.stopped = true;
-                Default::default()
+                self.program.finish();
+
+                println!("Program finished. Stopped program at {:?}", self.pos);
+
+                None
             }
-            _ => Default::default(),
+            _ => None,
         }
     }
 }
@@ -450,7 +642,7 @@ mod test {
     #[test]
     fn test_run_program_with_inputs() {
         let program = vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8];
-        assert_eq!(run_program_with_inputs(&program, &[Some(8)]).output(), 1);
+        assert_eq!(run_program_with_inputs(&program, &[Some(8)]).output().unwrap(), 1);
     }
 
     #[test]
@@ -463,14 +655,14 @@ mod test {
         // immediate mode
         let i_program = vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8];
 
-        assert_eq!(run_program_with_input(&program, Some(8)).output(), 1);
+        assert_eq!(run_program_with_input(&program, Some(8)).output().unwrap(), 1);
 
-        assert_eq!(run_program_with_input(&i_program, Some(8)).output(), 1);
+        assert_eq!(run_program_with_input(&i_program, Some(8)).output().unwrap(), 1);
 
         (0..20).filter(|n| *n != 8).for_each(|n| {
-            assert_eq!(run_program_with_input(&program, Some(n)).output(), 0);
+            assert_eq!(run_program_with_input(&program, Some(n)).output().unwrap(), 0);
 
-            assert_eq!(run_program_with_input(&i_program, Some(n)).output(), 0);
+            assert_eq!(run_program_with_input(&i_program, Some(n)).output().unwrap(), 0);
         });
     }
 
@@ -484,14 +676,14 @@ mod test {
         // immediate mode
         let i_program = vec![3, 3, 1107, -1, 8, 3, 4, 3, 99];
 
-        assert_eq!(run_program_with_input(&program, Some(7)).output(), 1);
+        assert_eq!(run_program_with_input(&program, Some(7)).output().unwrap(), 1);
 
-        assert_eq!(run_program_with_input(&i_program, Some(7)).output(), 1);
+        assert_eq!(run_program_with_input(&i_program, Some(7)).output().unwrap(), 1);
 
         (0..20).filter(|n| *n >= 8).for_each(|n| {
-            assert_eq!(run_program_with_input(&program, Some(n)).output(), 0);
+            assert_eq!(run_program_with_input(&program, Some(n)).output().unwrap(), 0);
 
-            assert_eq!(run_program_with_input(&i_program, Some(n)).output(), 0);
+            assert_eq!(run_program_with_input(&i_program, Some(n)).output().unwrap(), 0);
         });
     }
 
@@ -500,13 +692,13 @@ mod test {
         let program = vec![3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
         let i_program = vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1];
 
-        assert_eq!(run_program_with_input(&program, Some(0)).output(), 0);
+        assert_eq!(run_program_with_input(&program, Some(0)).output().unwrap(), 0);
 
-        assert_eq!(run_program_with_input(&i_program, Some(0)).output(), 0);
+        assert_eq!(run_program_with_input(&i_program, Some(0)).output().unwrap(), 0);
 
-        assert_eq!(run_program_with_input(&program, Some(1)).output(), 1);
+        assert_eq!(run_program_with_input(&program, Some(1)).output().unwrap(), 1);
 
-        assert_eq!(run_program_with_input(&i_program, Some(1)).output(), 1);
+        assert_eq!(run_program_with_input(&i_program, Some(1)).output().unwrap(), 1);
     }
 
     #[test]
@@ -514,13 +706,13 @@ mod test {
         let program = vec![3, 12, 5, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
         let i_program = vec![3, 3, 1106, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1];
 
-        assert_eq!(run_program_with_input(&program, Some(0)).output(), 1);
+        assert_eq!(run_program_with_input(&program, Some(0)).output().unwrap(), 1);
 
-        assert_eq!(run_program_with_input(&i_program, Some(0)).output(), 1);
+        assert_eq!(run_program_with_input(&i_program, Some(0)).output().unwrap(), 1);
 
-        assert_eq!(run_program_with_input(&program, Some(1)).output(), 0);
+        assert_eq!(run_program_with_input(&program, Some(1)).output().unwrap(), 0);
 
-        assert_eq!(run_program_with_input(&i_program, Some(1)).output(), 0);
+        assert_eq!(run_program_with_input(&i_program, Some(1)).output().unwrap(), 0);
     }
 
     #[test]
@@ -531,11 +723,11 @@ mod test {
             1101, 1000, 1, 20, 4, 20, 1105, 1, 46, 98, 99,
         ];
 
-        assert_eq!(run_program_with_input(&program, Some(7)).output(), 999);
+        assert_eq!(run_program_with_input(&program, Some(7)).output().unwrap(), 999);
 
-        assert_eq!(run_program_with_input(&program, Some(8)).output(), 1000);
+        assert_eq!(run_program_with_input(&program, Some(8)).output().unwrap(), 1000);
 
-        assert_eq!(run_program_with_input(&program, Some(9)).output(), 1001);
+        assert_eq!(run_program_with_input(&program, Some(9)).output().unwrap(), 1001);
     }
 
     #[test]
@@ -564,27 +756,27 @@ mod test {
 
         // phase settings: 4,3,2,1,0
         assert_eq!(
-            run_program_with_inputs(&program, &[Some(4), Some(0)]).output(),
+            run_program_with_inputs(&program, &[Some(4), Some(0)]).output().unwrap(),
             4
         );
 
         assert_eq!(
-            run_program_with_inputs(&program, &[Some(3), Some(4)]).output(),
+            run_program_with_inputs(&program, &[Some(3), Some(4)]).output().unwrap(),
             43
         );
 
         assert_eq!(
-            run_program_with_inputs(&program, &[Some(2), Some(43)]).output(),
+            run_program_with_inputs(&program, &[Some(2), Some(43)]).output().unwrap(),
             432
         );
 
         assert_eq!(
-            run_program_with_inputs(&program, &[Some(1), Some(432)]).output(),
+            run_program_with_inputs(&program, &[Some(1), Some(432)]).output().unwrap(),
             4321
         );
 
         assert_eq!(
-            run_program_with_inputs(&program, &[Some(0), Some(4321)]).output(),
+            run_program_with_inputs(&program, &[Some(0), Some(4321)]).output().unwrap(),
             43210
         );
     }
@@ -597,7 +789,7 @@ mod test {
         let prog = Program::from(program);
         let best = prog.find_best_phase_settings(5);
         assert_eq!(best.0, vec![4, 3, 2, 1, 0]);
-        assert_eq!(best.1, 43210);
+        assert_eq!(best.1.unwrap(), 43210);
 
         let program2: &[i64] = &[
             3, 23, 3, 24, 1002, 24, 10, 24, 1002, 23, -1, 23, 101, 5, 23, 23, 1, 24, 23,
@@ -606,7 +798,7 @@ mod test {
         let prog2 = Program::from(program2);
         let best2 = prog2.find_best_phase_settings(5);
         assert_eq!(best2.0, vec![0, 1, 2, 3, 4]);
-        assert_eq!(best2.1, 54321);
+        assert_eq!(best2.1.unwrap(), 54321);
 
         let program3: &[i64] = &[
             3, 31, 3, 32, 1002, 32, 10, 32, 1001, 31, -2, 31, 1007, 31, 0, 33, 1002, 33,
@@ -615,7 +807,7 @@ mod test {
         let prog3 = Program::from(program3);
         let best3 = prog3.find_best_phase_settings(5);
         assert_eq!(best3.0, vec![1, 0, 4, 3, 2]);
-        assert_eq!(best3.1, 65210);
+        assert_eq!(best3.1.unwrap(), 65210);
     }
 
     #[test]
@@ -628,8 +820,9 @@ mod test {
         ];
         let prog = Program::from(program);
         let best = prog.find_best_phase_settings_in_feedback_loop_mode(5);
+        println!("best: {:?}", best);
         assert_eq!(best.0, vec![9, 8, 7, 6, 5]);
-        assert_eq!(best.1, 139_629_729);
+        assert_eq!(best.1.unwrap(), 139_629_729);
 
         // let program2: &[i64] = &[
         //     3, 23, 3, 24, 1002, 24, 10, 24, 1002, 23, -1, 23, 101, 5, 23, 23, 1, 24, 23,
