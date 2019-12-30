@@ -24,8 +24,6 @@ lazy_static! {
 }
 
 #[derive(Debug)]
-// TODO: Implement Clone
-// TODO: Implement Default
 pub struct Program {
     pub code: Vec<i64>,
     pub sender: Sender<Option<i64>>,
@@ -36,18 +34,35 @@ pub struct Program {
     pub finished: bool,
 }
 
-impl From<&[i64]> for Program {
-    fn from(code: &[i64]) -> Self {
+impl Clone for Program {
+    fn clone(&self) -> Self {
+        Program {
+            code: self.code.to_owned(),
+            ..Default::default()
+        }
+    }
+}
+
+impl Default for Program {
+    fn default() -> Self {
         let (sender, receiver) = channel();
 
         Program {
-            code: code.to_owned(),
+            code: vec![],
             sender,
             receiver,
-            // inputs: receiver.into_iter(),
             output: vec![],
             pos: 0,
             finished: false,
+        }
+    }
+}
+
+impl From<&[i64]> for Program {
+    fn from(code: &[i64]) -> Self {
+        Program {
+            code: code.to_owned(),
+            ..Default::default()
         }
     }
 }
@@ -153,22 +168,12 @@ impl Program {
         &self,
         amplifier_count: usize,
     ) -> (Vec<usize>, Option<i64>) {
-        // (0..amplifier_count)
-        //     .permutations(amplifier_count)
-        //     .map(|permutation| {
-
         (5..5 + amplifier_count)
             .permutations(amplifier_count)
-            // TODO: into_par_iter
-            // .into_iter()
             .map(|permutation| {
-                // println!("i: {:?}", i);
-                // perm = permutation;
                 let mut amplifiers = (0..amplifier_count)
-                    .map(|_| Program::from(self.code.clone().as_slice()))
+                    .map(|_| self.clone())
                     .collect::<Vec<_>>();
-
-                // println!("amplifiers: {:?}", amplifiers);
 
                 // Send phase values.
                 for (k, phase) in (&permutation).iter().enumerate() {
@@ -176,31 +181,10 @@ impl Program {
 
                     let program = &mut amplifiers[amplifier_number];
 
-                    // let index = k % amplifier_count;
-
-                    // println!("sent phase {:?} to amplifier {:?}", Some(*phase as i64), amplifier_number);
-
                     program.sender.send(Some(*phase as i64)).unwrap();
-
-                    // let modified_phase = Some(
-                    //     (*phase as i64) +
-                    //     (amplifier_count * (1 - 1)) as i64
-                    // );
-                    // input = run_program_with_inputs(
-                    //     &self.code,
-                    //     &[modified_phase, Some(input)],
-                    // )
-                    // input = run_program_with_inputs(
-                    //     &self.code,
-                    //     &[Some(*phase as i64), Some(input)],
-                    //     )
-                    //     .output();
                 }
 
-                // println!("amplifiers: {:?}", amplifiers);
-
                 let mut input = Some(0);
-
                 let mut j = 0;
 
                 loop {
@@ -208,8 +192,8 @@ impl Program {
 
                     let program = &mut amplifiers[amplifier_number];
 
-                    // run
                     // println!("input ({:?}) to amplifier {:?}", input, amplifier_number);
+
                     program.sender.send(input).unwrap();
 
                     program.run();
@@ -227,57 +211,10 @@ impl Program {
                     j += 1;
                 }
 
-                // println!("output: {:?} for permutation: {:?}", input, permutation);
-
                 (permutation, input)
             })
             .max_by_key(|(_, power)| *power)
             .unwrap()
-
-        // let mut perm = vec![];
-
-        // Program::from(self.code).run()
-
-        // for (i, permutation) in (5..5 + amplifier_count).permutations(amplifier_count).into_iter().enumerate() {
-        // }
-        //
-        // (vec![], Some(9999))
-        //
-        //
-        //
-        //
-        //
-        // // (5..5 + amplifier_count)
-        // //     .permutations(amplifier_count)
-        // //     .map(|permutation| {
-        // //         println!("permutation: {:?}", permutation);
-        // //         let mut input = 0;
-        // //
-        // //         for phase in &permutation {
-        // //             // let modified_phase = Some(
-        // //             //     (*phase as i64) +
-        // //             //     (amplifier_count * (1 - 1)) as i64
-        // //             // );
-        // //             // input = run_program_with_inputs(
-        // //             //     &self.code,
-        // //             //     &[modified_phase, Some(input)],
-        // //             // )
-        // //             input = run_program_with_inputs(
-        // //                 &self.code,
-        // //                 &[Some(*phase as i64), Some(input)],
-        // //             )
-        // //             .output();
-        // //         }
-        // //
-        // //         (permutation, input)
-        // //     })
-        // //     .max_by_key(|(_, power)| *power)
-        // //     .unwrap()
-        //
-        //
-        //
-        //
-        //
     }
 
     pub fn run(&mut self) -> bool {
