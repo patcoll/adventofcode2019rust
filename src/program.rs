@@ -93,7 +93,7 @@ impl Program {
         }
     }
 
-    pub fn finish(&mut self) -> () {
+    pub fn finish(&mut self) {
         self.finished = true;
     }
 
@@ -160,7 +160,7 @@ impl Program {
         (5..5 + amplifier_count)
             .permutations(amplifier_count)
             // TODO: into_par_iter
-            .into_iter()
+            // .into_iter()
             .map(|permutation| {
                 // println!("i: {:?}", i);
                 // perm = permutation;
@@ -309,7 +309,7 @@ impl Program {
 }
 
 pub fn compose_program_with_noun_and_verb(
-    original: Vec<i64>,
+    original: &[i64],
     noun: i64,
     verb: i64,
 ) -> Vec<i64> {
@@ -348,7 +348,7 @@ pub fn run_program_to_get_output(
         (0..=99).permutations(2).map(|v| (v[0], v[1])).collect();
 
     permutations.into_par_iter().find_first(|(i, j)| {
-        let composed = compose_program_with_noun_and_verb(original.to_owned(), *i, *j);
+        let composed = compose_program_with_noun_and_verb(original, *i, *j);
         run_program_and_get_output(&composed) == desired_output
     })
 }
@@ -550,7 +550,9 @@ impl<'a> Instruction<'a> {
                         // Send `None` so program can stop.
                         None
                     }
-                    Err(_) => panic!("Channel unexpectedly closed"),
+                    Err(TryRecvError::Disconnected) => {
+                        panic!("Channel unexpectedly closed")
+                    }
                 }
                 // let input = self.program.receiver.try_recv().unwrap();
                 // // println!("input: {:?}", input);
@@ -566,7 +568,7 @@ impl<'a> Instruction<'a> {
             4 => {
                 // println!("output");
                 if let [Some(out)] = self.values.as_slice() {
-                    println!("[program::out]: {}", out);
+                    // println!("[program::out]: {}", out);
 
                     self.program.output.push(Some(*out));
 
@@ -629,7 +631,7 @@ impl<'a> Instruction<'a> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use ntest::*;
+    // use ntest::*;
 
     #[test]
     fn test_program_instruction() {
@@ -904,8 +906,6 @@ mod test {
     }
 
     #[test]
-    #[ignore]
-    #[timeout(5000)]
     fn test_find_best_phase_settings_in_feedback_loop_mode() {
         let program: &[i64] = &[
             3, 26, 1001, 26, -4, 26, 3, 27, 1002, 27, 2, 27, 1, 27, 26, 27, 4, 27, 1001,
@@ -913,26 +913,17 @@ mod test {
         ];
         let prog = Program::from(program);
         let best = prog.find_best_phase_settings_in_feedback_loop_mode(5);
-        // println!("best: {:?}", best);
         assert_eq!(best.0, vec![9, 8, 7, 6, 5]);
         assert_eq!(best.1.unwrap(), 139_629_729);
 
-        // let program2: &[i64] = &[
-        //     3, 23, 3, 24, 1002, 24, 10, 24, 1002, 23, -1, 23, 101, 5, 23, 23, 1, 24, 23,
-        //     23, 4, 23, 99, 0, 0,
-        // ];
-        // let prog2 = Program::from(program2);
-        // let best2 = prog2.find_best_phase_settings(5);
-        // assert_eq!(best2.0, vec![0, 1, 2, 3, 4]);
-        // assert_eq!(best2.1, 54321);
-        //
-        // let program3: &[i64] = &[
-        //     3, 31, 3, 32, 1002, 32, 10, 32, 1001, 31, -2, 31, 1007, 31, 0, 33, 1002, 33,
-        //     7, 33, 1, 33, 31, 31, 1, 32, 31, 31, 4, 31, 99, 0, 0, 0,
-        // ];
-        // let prog3 = Program::from(program3);
-        // let best3 = prog3.find_best_phase_settings(5);
-        // assert_eq!(best3.0, vec![1, 0, 4, 3, 2]);
-        // assert_eq!(best3.1, 65210);
+        let program2: &[i64] = &[
+            3, 52, 1001, 52, -5, 52, 3, 53, 1, 52, 56, 54, 1007, 54, 5, 55, 1005, 55, 26,
+            1001, 54, -5, 54, 1105, 1, 12, 1, 53, 54, 53, 1008, 54, 0, 55, 1001, 55, 1,
+            55, 2, 53, 55, 53, 4, 53, 1001, 56, -1, 56, 1005, 56, 6, 99, 0, 0, 0, 0, 10,
+        ];
+        let prog2 = Program::from(program2);
+        let best2 = prog2.find_best_phase_settings_in_feedback_loop_mode(5);
+        assert_eq!(best2.0, vec![9, 7, 8, 5, 6]);
+        assert_eq!(best2.1.unwrap(), 18216);
     }
 }

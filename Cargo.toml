@@ -13,4 +13,4 @@ petgraph = "0.4.13"
 rayon = "1.2.1"
 
 [dev-dependencies]
-ntest = "*"
+# ntest = "*"

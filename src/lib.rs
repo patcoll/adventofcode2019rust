@@ -63,7 +63,7 @@ mod test {
             .map(|node| node.parse::<i64>().unwrap())
             .collect();
 
-        let composed = program::compose_program_with_noun_and_verb(program, 12, 2);
+        let composed = program::compose_program_with_noun_and_verb(&program, 12, 2);
         let result = program::run_program(&composed);
 
         assert_eq!(result.code[0], 9_706_670);
@@ -248,5 +248,20 @@ mod test {
 
         assert_eq!(best.0, vec![2, 1, 4, 3, 0]);
         assert_eq!(best.1.unwrap(), 118_936);
+    }
+
+    #[test]
+    fn test_day_07_part_2() {
+        let program: Vec<i64> = include_str!("../data/d07.txt")
+            .trim()
+            .split(',')
+            .map(|node| node.parse::<i64>().unwrap())
+            .collect();
+
+        let prog = Program::from(program.as_slice());
+        let best = prog.find_best_phase_settings_in_feedback_loop_mode(5);
+
+        assert_eq!(best.0, vec![9, 7, 6, 5, 8]);
+        assert_eq!(best.1.unwrap(), 57_660_948);
     }
 }
