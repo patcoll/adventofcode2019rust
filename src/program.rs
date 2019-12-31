@@ -28,7 +28,6 @@ pub struct Program {
     pub code: Vec<i64>,
     pub sender: Sender<Option<i64>>,
     pub receiver: Receiver<Option<i64>>,
-    // pub inputs: IntoIter<Option<i64>>,
     pub output: Vec<Option<i64>>,
     pub pos: usize,
     pub finished: bool,
@@ -48,7 +47,7 @@ impl Default for Program {
         let (sender, receiver) = channel();
 
         Program {
-            code: vec![],
+            code: vec![99],
             sender,
             receiver,
             output: vec![],
@@ -67,29 +66,7 @@ impl From<&[i64]> for Program {
     }
 }
 
-// impl From<Vec<i64>> for Program {
-//     fn from(code: Vec<i64>) -> Self {
-//         let (sender, receiver) = channel();
-//
-//         Program {
-//             code,
-//             sender,
-//             receiver,
-//             // inputs: receiver.into_iter(),
-//             output: vec![],
-//             pos: 0,
-//             finished: false,
-//         }
-//     }
-// }
-
 impl Program {
-    // pub fn send_input(i64) -> Result<i64> {
-    // }
-    //
-    // pub fn recv_input() -> Result<i64, > {
-    // }
-
     fn new(code: &[i64], inputs: &[Option<i64>]) -> Program {
         let (sender, receiver) = channel();
 
@@ -101,10 +78,7 @@ impl Program {
             code: code.to_owned(),
             sender,
             receiver,
-            // inputs: receiver.into_iter(),
-            output: vec![],
-            pos: 0,
-            finished: false,
+            ..Default::default()
         }
     }
 
@@ -136,16 +110,14 @@ impl Program {
     pub fn output(&self) -> Option<i64> {
         if self.output.is_empty() || self.output[self.output.len() - 1].is_none() {
             return None;
-            // panic!("Expected output");
         }
-        self.output[self.output.len() - 1] //.unwrap()
+        self.output[self.output.len() - 1]
     }
 
     pub fn find_best_phase_settings(
         &self,
         amplifier_count: usize,
     ) -> (Vec<usize>, Option<i64>) {
-        // self.find_best_phase_settings_with_loop_count(amplifier_count, 1)
         (0..amplifier_count)
             .permutations(amplifier_count)
             .map(|permutation| {
@@ -168,6 +140,8 @@ impl Program {
         &self,
         amplifier_count: usize,
     ) -> (Vec<usize>, Option<i64>) {
+        let amp_number = |amps: &[Program], n: usize| -> usize { n % amps.len() };
+
         (5..5 + amplifier_count)
             .permutations(amplifier_count)
             .map(|permutation| {
@@ -176,21 +150,20 @@ impl Program {
                     .collect::<Vec<_>>();
 
                 // Send phase values.
-                for (k, phase) in (&permutation).iter().enumerate() {
-                    let amplifier_number = k % amplifier_count;
-
-                    let program = &mut amplifiers[amplifier_number];
-
+                for (j, phase) in (&permutation).iter().enumerate() {
+                    let n = amp_number(&amplifiers, j);
+                    let program = &mut amplifiers[n];
                     program.sender.send(Some(*phase as i64)).unwrap();
                 }
 
+                // Send input and get output in a loop until done.
                 let mut input = Some(0);
+                let mut finished = 0;
                 let mut j = 0;
 
-                loop {
-                    let amplifier_number = j % amplifier_count;
-
-                    let program = &mut amplifiers[amplifier_number];
+                while finished < amplifier_count {
+                    let n = amp_number(&amplifiers, j);
+                    let program = &mut amplifiers[n];
 
                     // println!("input ({:?}) to amplifier {:?}", input, amplifier_number);
 
@@ -198,15 +171,13 @@ impl Program {
 
                     program.run();
 
+                    if program.is_finished() {
+                        finished += 1;
+                    }
+
                     input = program.output();
 
                     // println!("output ({:?}) from amplifier {:?}", input, amplifier_number);
-
-                    // TODO: Allow amplifiers to finish in order from A to E instead of detecting
-                    // last one in `loop` construct.
-                    if amplifier_number == amplifier_count - 1 && program.is_finished() {
-                        break;
-                    }
 
                     j += 1;
                 }
@@ -217,14 +188,13 @@ impl Program {
             .unwrap()
     }
 
-    pub fn run(&mut self) -> bool {
+    pub fn run(&mut self) {
         let mut opcode: Opcode;
 
         loop {
             let pos = self.pos;
             let opcode_value = self.get(pos).unwrap();
             opcode = Opcode::from(opcode_value);
-            // println!("opcode: {:?}", opcode);
 
             let mut instruction = Instruction::new(self, opcode);
             instruction.init(pos);
@@ -239,9 +209,6 @@ impl Program {
             // println!("program: {:?}", self.code);
             // println!();
         }
-
-        // println!("output: {:?}", prog.output);
-        self.is_finished()
     }
 }
 
@@ -255,22 +222,6 @@ pub fn compose_program_with_noun_and_verb(
     prog[2] = verb;
     prog
 }
-
-// pub fn run_program_with_noun_and_verb(original: &[i64], noun: i64, verb: i64) -> &Program {
-//     // let mut program = original.to_owned();
-//     original[1] = noun;
-//     original[2] = verb;
-//     run_program(&original)
-// }
-
-// pub fn run_program_with_noun_and_verb_and_get_output(
-//     original: &[i64],
-//     noun: i64,
-//     verb: i64,
-// ) -> i64 {
-//     let result = run_program_with_noun_and_verb(original, noun, verb);
-//     result.code[0]
-// }
 
 pub fn run_program_and_get_output(original: &[i64]) -> i64 {
     let result = run_program(original);
@@ -297,12 +248,6 @@ pub fn run_program(original: &[i64]) -> Program {
 pub fn run_program_with_input(original: &[i64], input: Option<i64>) -> Program {
     run_program_with_inputs(original, &[input])
 }
-
-// pub fn run_existing_program_with_input(program: &mut Program, input: Option<i64>) -> bool {
-//     program.sender.send(input).unwrap();
-//     program.run();
-//     program.is_finished()
-// }
 
 pub fn run_program_with_inputs(original: &[i64], inputs: &[Option<i64>]) -> Program {
     let mut program = Program::new(original, inputs);
@@ -418,7 +363,6 @@ impl<'a> Instruction<'a> {
 
         // println!("indexes: {:?}", indexes);
         // println!("values: {:?}", values);
-        // println!("evaluated_values: {:?}", evaluated_values);
         // println!("::");
 
         self.indexes = indexes;
@@ -428,18 +372,11 @@ impl<'a> Instruction<'a> {
     }
 
     fn run(&mut self) -> Option<usize> {
-        // println!("(inputs): {:?}", self.program.inputs);
-
         match self.opcode.number {
             // add
             1 => {
                 if let [Some(first), Some(second), _] = self.values.as_slice() {
                     if let [_, _, Some(result_index)] = self.indexes.as_slice() {
-                        // println!("add");
-                        // println!("first: {:?}", first);
-                        // println!("second: {:?}", second);
-                        // println!("result: {:?}", first + second);
-                        // println!("result_index: {:?}", result_index);
                         self.program.set(*result_index, first + second);
                     }
                 };
@@ -450,11 +387,6 @@ impl<'a> Instruction<'a> {
             2 => {
                 if let [Some(first), Some(second), _] = self.values.as_slice() {
                     if let [_, _, Some(result_index)] = self.indexes.as_slice() {
-                        // println!("multiply");
-                        // println!("first: {:?}", first);
-                        // println!("second: {:?}", second);
-                        // println!("result: {:?}", first * second);
-                        // println!("result_index: {:?}", result_index);
                         self.program.set(*result_index, first * second);
                     }
                 };
@@ -463,12 +395,6 @@ impl<'a> Instruction<'a> {
             }
             // input
             3 => {
-                // println!("input");
-                // if self.program.inputs.is_empty() {
-                //     panic!("Input was expected but is not available.");
-                // }
-                // let input = self.program.inputs.remove(0);
-                // let input = Some(9999);
                 match self.program.receiver.try_recv() {
                     Ok(input) => {
                         if let [Some(result_index)] = self.indexes.as_slice() {
@@ -491,19 +417,9 @@ impl<'a> Instruction<'a> {
                         panic!("Channel unexpectedly closed")
                     }
                 }
-                // let input = self.program.receiver.try_recv().unwrap();
-                // // println!("input: {:?}", input);
-                // // println!("(inputs left): {:?}", self.program.inputs);
-                //
-                // if let [Some(result_index)] = self.indexes.as_slice() {
-                //     self.program.set(*result_index, input.unwrap());
-                // };
-                //
-                // Some(self.pos + self.opcode.length)
             }
             // output
             4 => {
-                // println!("output");
                 if let [Some(out)] = self.values.as_slice() {
                     // println!("[program::out]: {}", out);
 
@@ -555,8 +471,6 @@ impl<'a> Instruction<'a> {
             // halt
             99 => {
                 self.program.finish();
-
-                // println!("Program finished. Stopped program at {:?}", self.pos);
 
                 None
             }
