@@ -777,4 +777,13 @@ mod test {
         assert_eq!(best2.0, vec![9, 7, 8, 5, 6]);
         assert_eq!(best2.1.unwrap(), 18216);
     }
+
+    #[test]
+    fn test_large_numbers() {
+        let program: &[i64] = &[1102, 34_915_192, 34_915_192, 7, 4, 7, 99, 0];
+        let mut prog = Program::from(program);
+        prog.run();
+
+        assert_eq!(prog.output().unwrap(), 1_219_070_632_396_864);
+    }
 }
