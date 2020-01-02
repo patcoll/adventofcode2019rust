@@ -786,4 +786,13 @@ mod test {
 
         assert_eq!(prog.output().unwrap(), 1_219_070_632_396_864);
     }
+
+    #[test]
+    fn test_large_numbers_2() {
+        let program: &[i64] = &[104, 1_125_899_906_842_624, 99];
+        let mut prog = Program::from(program);
+        prog.run();
+
+        assert_eq!(prog.output().unwrap(), 1_125_899_906_842_624);
+    }
 }
