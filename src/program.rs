@@ -97,14 +97,15 @@ impl Program {
         }
     }
 
-    pub fn set(&mut self, pos: usize, value: i64) -> Option<i64> {
-        match pos {
-            p if p >= self.code.len() => None,
-            _ => {
-                self.code[pos] = value;
-                Some(value)
-            }
+    pub fn set(&mut self, pos: usize, value: i64) {
+        if pos >= self.code.len() {
+            let mut expand_with = vec![0; pos - self.code.len()];
+            expand_with.push(value);
+            self.code.append(&mut expand_with);
+            return;
         }
+
+        self.code[pos] = value;
     }
 
     pub fn output(&self) -> Option<i64> {
@@ -794,5 +795,14 @@ mod test {
         prog.run();
 
         assert_eq!(prog.output().unwrap(), 1_125_899_906_842_624);
+    }
+
+    #[test]
+    fn test_expandable_memory() {
+        let program: &[i64] = &[3, 10, 99];
+        let mut prog = Program::new(program, &[Some(111)]);
+        prog.run();
+
+        assert_eq!(prog.code, &[3, 10, 99, 0, 0, 0, 0, 0, 0, 0, 111]);
     }
 }
