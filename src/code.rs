@@ -215,6 +215,12 @@ pub struct Digits {
 
 impl From<u32> for Digits {
     fn from(num: u32) -> Self {
+        Self::from(num as u64)
+    }
+}
+
+impl From<u64> for Digits {
+    fn from(num: u64) -> Self {
         let vec = Self::number_to_vec(num);
         let length = vec.len();
 
@@ -227,14 +233,14 @@ impl From<u32> for Digits {
 }
 
 impl Digits {
-    fn number_to_vec(n: u32) -> Vec<u32> {
+    fn number_to_vec(n: u64) -> Vec<u32> {
         let mut digits = Vec::new();
         let mut n = n;
         while n > 9 {
-            digits.push(n % 10);
+            digits.push((n % 10) as u32);
             n /= 10;
         }
-        digits.push(n);
+        digits.push(n as u32);
         digits.reverse();
         digits
     }

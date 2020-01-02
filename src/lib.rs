@@ -3,6 +3,7 @@ pub mod fuel;
 pub mod grid;
 pub mod orbits;
 pub mod program;
+pub mod sif;
 
 #[macro_use]
 extern crate lazy_static;
@@ -14,6 +15,7 @@ mod test {
     use grid::{Coordinate, Grid, Route};
     use orbits::Universe;
     use program::Program;
+    use sif::Image;
 
     #[test]
     fn test_day_01() {
@@ -263,5 +265,40 @@ mod test {
 
         assert_eq!(best.0, vec![9, 7, 6, 5, 8]);
         assert_eq!(best.1.unwrap(), 57_660_948);
+    }
+
+    #[test]
+    fn test_day_08() {
+        let source = include_str!("../data/d08.txt")
+            .trim()
+            .chars()
+            .map(|node| node.to_digit(10).unwrap() as u32);
+
+        let image = Image::new(25, 6, source);
+
+        let counts = image.count_digits();
+
+        let result = counts
+            .iter()
+            .min_by_key(|map| map.get(&0).unwrap())
+            .unwrap();
+
+        let ones = result.get(&1).unwrap();
+
+        let twos = result.get(&2).unwrap();
+
+        assert_eq!(ones * twos, 2193);
+    }
+
+    #[test]
+    fn test_day_08_part_2() {
+        let source = include_str!("../data/d08.txt")
+            .trim()
+            .chars()
+            .map(|node| node.to_digit(10).unwrap() as u32);
+
+        let image = Image::new(25, 6, source);
+
+        image.print();
     }
 }
