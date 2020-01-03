@@ -33,10 +33,10 @@ pub struct Program {
     pub code: Vec<i64>,
     sender: Sender<Option<i64>>,
     receiver: Receiver<Option<i64>>,
-    pub output: Vec<i64>,
-    pub pos: usize,
-    pub relative_base: isize,
-    pub finished: bool,
+    output: Vec<i64>,
+    pos: usize,
+    relative_base: isize,
+    finished: bool,
 }
 
 impl Clone for Program {
@@ -124,6 +124,10 @@ impl Program {
             return None;
         }
         Some(self.output[self.output.len() - 1])
+    }
+
+    pub fn send_output(&mut self, out: i64) {
+        self.output.push(out);
     }
 
     pub fn send_input<T>(&mut self, input: T)
@@ -451,7 +455,7 @@ impl<'a> Instruction<'a> {
                 if let [Some(out)] = self.values.as_slice() {
                     // println!("[program::out]: {}", out);
 
-                    self.program.output.push(*out);
+                    self.program.send_output(*out);
 
                     Some(self.pos + self.opcode.length)
                 } else {
@@ -861,6 +865,6 @@ mod test {
         let mut prog = Program::from(program);
         prog.run();
 
-        assert_eq!(prog.output, program);
+        assert_eq!(prog.all_output(), program);
     }
 }
