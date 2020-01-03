@@ -192,7 +192,7 @@ mod test {
             .collect();
 
         assert_eq!(
-            program::run_program_with_input(&program, Some(1))
+            program::run_program_with_input(&program, 1)
                 .output()
                 .unwrap(),
             16_574_641
@@ -208,7 +208,7 @@ mod test {
             .collect();
 
         assert_eq!(
-            program::run_program_with_input(&program, Some(5))
+            program::run_program_with_input(&program, 5)
                 .output()
                 .unwrap(),
             15_163_975
@@ -249,7 +249,7 @@ mod test {
         let best = prog.find_best_phase_settings(5);
 
         assert_eq!(best.0, vec![2, 1, 4, 3, 0]);
-        assert_eq!(best.1.unwrap(), 118_936);
+        assert_eq!(best.1, 118_936);
     }
 
     #[test]
@@ -264,7 +264,7 @@ mod test {
         let best = prog.find_best_phase_settings_in_feedback_loop_mode(5);
 
         assert_eq!(best.0, vec![9, 7, 6, 5, 8]);
-        assert_eq!(best.1.unwrap(), 57_660_948);
+        assert_eq!(best.1, 57_660_948);
     }
 
     #[test]

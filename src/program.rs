@@ -31,8 +31,8 @@ lazy_static! {
 #[derive(Debug)]
 pub struct Program {
     pub code: Vec<i64>,
-    sender: Sender<Option<i64>>,
-    receiver: Receiver<Option<i64>>,
+    sender: Sender<i64>,
+    receiver: Receiver<i64>,
     output: Vec<i64>,
     pos: usize,
     relative_base: isize,
@@ -74,7 +74,7 @@ impl From<&[i64]> for Program {
 }
 
 impl Program {
-    fn new(code: &[i64], inputs: &[Option<i64>]) -> Program {
+    fn new(code: &[i64], inputs: &[i64]) -> Program {
         let (sender, receiver) = channel();
 
         for input in inputs {
@@ -134,27 +134,25 @@ impl Program {
     where
         T: Integer + ToPrimitive,
     {
-        self.sender.send(input.to_i64()).unwrap();
+        self.sender.send(input.to_i64().unwrap()).unwrap();
     }
 
-    pub fn try_recv_input(&self) -> Result<Option<i64>, TryRecvError> {
+    pub fn try_recv_input(&self) -> Result<i64, TryRecvError> {
         self.receiver.try_recv()
     }
 
-    pub fn find_best_phase_settings(
-        &self,
-        amplifier_count: usize,
-    ) -> (Vec<usize>, Option<i64>) {
+    pub fn find_best_phase_settings(&self, amplifier_count: usize) -> (Vec<usize>, i64) {
         (0..amplifier_count)
             .permutations(amplifier_count)
             .map(|permutation| {
-                let mut input = Some(0);
+                let mut input = 0;
 
                 for phase in &permutation {
-                    let mut program =
-                        Program::new(&self.code, &[Some(*phase as i64), input]);
+                    let mut program = self.clone();
+                    program.send_input(*phase);
+                    program.send_input(input);
                     program.run();
-                    input = program.output();
+                    input = program.output().expect("expected output");
                 }
 
                 (permutation, input)
@@ -166,7 +164,7 @@ impl Program {
     pub fn find_best_phase_settings_in_feedback_loop_mode(
         &self,
         amplifier_count: usize,
-    ) -> (Vec<usize>, Option<i64>) {
+    ) -> (Vec<usize>, i64) {
         let amp_number = |amps: &[Program], n: usize| -> usize { n % amps.len() };
 
         (5..5 + amplifier_count)
@@ -180,11 +178,11 @@ impl Program {
                 for (j, phase) in (&permutation).iter().enumerate() {
                     let n = amp_number(&amplifiers, j);
                     let program = &mut amplifiers[n];
-                    program.send_input(*phase as i64);
+                    program.send_input(*phase);
                 }
 
                 // Send input and get output in a loop until done.
-                let mut input = Some(0);
+                let mut input = 0;
                 let mut finished = 0;
                 let mut j = 0;
 
@@ -192,9 +190,7 @@ impl Program {
                     let n = amp_number(&amplifiers, j);
                     let program = &mut amplifiers[n];
 
-                    // println!("input ({:?}) to amplifier {:?}", input, amplifier_number);
-
-                    program.send_input(input.unwrap());
+                    program.send_input(input);
 
                     program.run();
 
@@ -202,9 +198,7 @@ impl Program {
                         finished += 1;
                     }
 
-                    input = program.output();
-
-                    // println!("output ({:?}) from amplifier {:?}", input, amplifier_number);
+                    input = program.output().expect("expected output");
 
                     j += 1;
                 }
@@ -269,14 +263,16 @@ pub fn run_program_to_get_output(
 }
 
 pub fn run_program(original: &[i64]) -> Program {
-    run_program_with_input(original, None)
+    let mut program = Program::from(original);
+    program.run();
+    program
 }
 
-pub fn run_program_with_input(original: &[i64], input: Option<i64>) -> Program {
+pub fn run_program_with_input(original: &[i64], input: i64) -> Program {
     run_program_with_inputs(original, &[input])
 }
 
-pub fn run_program_with_inputs(original: &[i64], inputs: &[Option<i64>]) -> Program {
+pub fn run_program_with_inputs(original: &[i64], inputs: &[i64]) -> Program {
     let mut program = Program::new(original, inputs);
     program.run();
     program
@@ -431,7 +427,7 @@ impl<'a> Instruction<'a> {
                     Ok(input) => {
                         if let [Some(result_index)] = self.indexes.as_slice() {
                             // println!("Input ({:?}) going to index {:?}. pos: {:?}", input, result_index, self.pos);
-                            self.program.set(*result_index, input.unwrap());
+                            self.program.set(*result_index, input);
                         };
 
                         Some(self.pos + self.opcode.length)
@@ -540,12 +536,7 @@ mod test {
     #[test]
     fn test_run_program_with_inputs() {
         let program = vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8];
-        assert_eq!(
-            run_program_with_inputs(&program, &[Some(8)])
-                .output()
-                .unwrap(),
-            1
-        );
+        assert_eq!(run_program_with_inputs(&program, &[8]).output().unwrap(), 1);
     }
 
     #[test]
@@ -558,30 +549,14 @@ mod test {
         // immediate mode
         let i_program = vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8];
 
-        assert_eq!(
-            run_program_with_input(&program, Some(8)).output().unwrap(),
-            1
-        );
+        assert_eq!(run_program_with_input(&program, 8).output().unwrap(), 1);
 
-        assert_eq!(
-            run_program_with_input(&i_program, Some(8))
-                .output()
-                .unwrap(),
-            1
-        );
+        assert_eq!(run_program_with_input(&i_program, 8).output().unwrap(), 1);
 
         (0..20).filter(|n| *n != 8).for_each(|n| {
-            assert_eq!(
-                run_program_with_input(&program, Some(n)).output().unwrap(),
-                0
-            );
+            assert_eq!(run_program_with_input(&program, n).output().unwrap(), 0);
 
-            assert_eq!(
-                run_program_with_input(&i_program, Some(n))
-                    .output()
-                    .unwrap(),
-                0
-            );
+            assert_eq!(run_program_with_input(&i_program, n).output().unwrap(), 0);
         });
     }
 
@@ -595,30 +570,14 @@ mod test {
         // immediate mode
         let i_program = vec![3, 3, 1107, -1, 8, 3, 4, 3, 99];
 
-        assert_eq!(
-            run_program_with_input(&program, Some(7)).output().unwrap(),
-            1
-        );
+        assert_eq!(run_program_with_input(&program, 7).output().unwrap(), 1);
 
-        assert_eq!(
-            run_program_with_input(&i_program, Some(7))
-                .output()
-                .unwrap(),
-            1
-        );
+        assert_eq!(run_program_with_input(&i_program, 7).output().unwrap(), 1);
 
         (0..20).filter(|n| *n >= 8).for_each(|n| {
-            assert_eq!(
-                run_program_with_input(&program, Some(n)).output().unwrap(),
-                0
-            );
+            assert_eq!(run_program_with_input(&program, n).output().unwrap(), 0);
 
-            assert_eq!(
-                run_program_with_input(&i_program, Some(n))
-                    .output()
-                    .unwrap(),
-                0
-            );
+            assert_eq!(run_program_with_input(&i_program, n).output().unwrap(), 0);
         });
     }
 
@@ -627,29 +586,13 @@ mod test {
         let program = vec![3, 12, 6, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
         let i_program = vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1];
 
-        assert_eq!(
-            run_program_with_input(&program, Some(0)).output().unwrap(),
-            0
-        );
+        assert_eq!(run_program_with_input(&program, 0).output().unwrap(), 0);
 
-        assert_eq!(
-            run_program_with_input(&i_program, Some(0))
-                .output()
-                .unwrap(),
-            0
-        );
+        assert_eq!(run_program_with_input(&i_program, 0).output().unwrap(), 0);
 
-        assert_eq!(
-            run_program_with_input(&program, Some(1)).output().unwrap(),
-            1
-        );
+        assert_eq!(run_program_with_input(&program, 1).output().unwrap(), 1);
 
-        assert_eq!(
-            run_program_with_input(&i_program, Some(1))
-                .output()
-                .unwrap(),
-            1
-        );
+        assert_eq!(run_program_with_input(&i_program, 1).output().unwrap(), 1);
     }
 
     #[test]
@@ -657,29 +600,13 @@ mod test {
         let program = vec![3, 12, 5, 12, 15, 1, 13, 14, 13, 4, 13, 99, -1, 0, 1, 9];
         let i_program = vec![3, 3, 1106, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1];
 
-        assert_eq!(
-            run_program_with_input(&program, Some(0)).output().unwrap(),
-            1
-        );
+        assert_eq!(run_program_with_input(&program, 0).output().unwrap(), 1);
 
-        assert_eq!(
-            run_program_with_input(&i_program, Some(0))
-                .output()
-                .unwrap(),
-            1
-        );
+        assert_eq!(run_program_with_input(&i_program, 0).output().unwrap(), 1);
 
-        assert_eq!(
-            run_program_with_input(&program, Some(1)).output().unwrap(),
-            0
-        );
+        assert_eq!(run_program_with_input(&program, 1).output().unwrap(), 0);
 
-        assert_eq!(
-            run_program_with_input(&i_program, Some(1))
-                .output()
-                .unwrap(),
-            0
-        );
+        assert_eq!(run_program_with_input(&i_program, 1).output().unwrap(), 0);
     }
 
     #[test]
@@ -690,20 +617,11 @@ mod test {
             1101, 1000, 1, 20, 4, 20, 1105, 1, 46, 98, 99,
         ];
 
-        assert_eq!(
-            run_program_with_input(&program, Some(7)).output().unwrap(),
-            999
-        );
+        assert_eq!(run_program_with_input(&program, 7).output().unwrap(), 999);
 
-        assert_eq!(
-            run_program_with_input(&program, Some(8)).output().unwrap(),
-            1000
-        );
+        assert_eq!(run_program_with_input(&program, 8).output().unwrap(), 1000);
 
-        assert_eq!(
-            run_program_with_input(&program, Some(9)).output().unwrap(),
-            1001
-        );
+        assert_eq!(run_program_with_input(&program, 9).output().unwrap(), 1001);
     }
 
     #[test]
@@ -732,35 +650,31 @@ mod test {
 
         // phase settings: 4,3,2,1,0
         assert_eq!(
-            run_program_with_inputs(&program, &[Some(4), Some(0)])
-                .output()
-                .unwrap(),
+            run_program_with_inputs(&program, &[4, 0]).output().unwrap(),
             4
         );
 
         assert_eq!(
-            run_program_with_inputs(&program, &[Some(3), Some(4)])
-                .output()
-                .unwrap(),
+            run_program_with_inputs(&program, &[3, 4]).output().unwrap(),
             43
         );
 
         assert_eq!(
-            run_program_with_inputs(&program, &[Some(2), Some(43)])
+            run_program_with_inputs(&program, &[2, 43])
                 .output()
                 .unwrap(),
             432
         );
 
         assert_eq!(
-            run_program_with_inputs(&program, &[Some(1), Some(432)])
+            run_program_with_inputs(&program, &[1, 432])
                 .output()
                 .unwrap(),
             4321
         );
 
         assert_eq!(
-            run_program_with_inputs(&program, &[Some(0), Some(4321)])
+            run_program_with_inputs(&program, &[0, 4321])
                 .output()
                 .unwrap(),
             43210
@@ -775,7 +689,7 @@ mod test {
         let prog = Program::from(program);
         let best = prog.find_best_phase_settings(5);
         assert_eq!(best.0, vec![4, 3, 2, 1, 0]);
-        assert_eq!(best.1.unwrap(), 43210);
+        assert_eq!(best.1, 43210);
 
         let program2: &[i64] = &[
             3, 23, 3, 24, 1002, 24, 10, 24, 1002, 23, -1, 23, 101, 5, 23, 23, 1, 24, 23,
@@ -784,7 +698,7 @@ mod test {
         let prog2 = Program::from(program2);
         let best2 = prog2.find_best_phase_settings(5);
         assert_eq!(best2.0, vec![0, 1, 2, 3, 4]);
-        assert_eq!(best2.1.unwrap(), 54321);
+        assert_eq!(best2.1, 54321);
 
         let program3: &[i64] = &[
             3, 31, 3, 32, 1002, 32, 10, 32, 1001, 31, -2, 31, 1007, 31, 0, 33, 1002, 33,
@@ -793,7 +707,7 @@ mod test {
         let prog3 = Program::from(program3);
         let best3 = prog3.find_best_phase_settings(5);
         assert_eq!(best3.0, vec![1, 0, 4, 3, 2]);
-        assert_eq!(best3.1.unwrap(), 65210);
+        assert_eq!(best3.1, 65210);
     }
 
     #[test]
@@ -805,7 +719,7 @@ mod test {
         let prog = Program::from(program);
         let best = prog.find_best_phase_settings_in_feedback_loop_mode(5);
         assert_eq!(best.0, vec![9, 8, 7, 6, 5]);
-        assert_eq!(best.1.unwrap(), 139_629_729);
+        assert_eq!(best.1, 139_629_729);
 
         let program2: &[i64] = &[
             3, 52, 1001, 52, -5, 52, 3, 53, 1, 52, 56, 54, 1007, 54, 5, 55, 1005, 55, 26,
@@ -815,7 +729,7 @@ mod test {
         let prog2 = Program::from(program2);
         let best2 = prog2.find_best_phase_settings_in_feedback_loop_mode(5);
         assert_eq!(best2.0, vec![9, 7, 8, 5, 6]);
-        assert_eq!(best2.1.unwrap(), 18216);
+        assert_eq!(best2.1, 18216);
     }
 
     #[test]
@@ -839,7 +753,7 @@ mod test {
     #[test]
     fn test_expandable_memory() {
         let program: &[i64] = &[3, 10, 99];
-        let mut prog = Program::new(program, &[Some(111)]);
+        let mut prog = Program::new(program, &[111]);
         prog.run();
 
         assert_eq!(prog.code, &[3, 10, 99, 0, 0, 0, 0, 0, 0, 0, 111]);
@@ -849,7 +763,7 @@ mod test {
     fn test_adjust_relative_base() {
         let program: &[i64] = &[109, 19, 99];
 
-        let mut prog = Program::new(program, &[Some(111)]);
+        let mut prog = Program::new(program, &[111]);
         prog.relative_base = 2000;
         prog.run();
 
