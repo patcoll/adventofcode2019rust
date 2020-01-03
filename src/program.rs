@@ -31,7 +31,7 @@ lazy_static! {
 #[derive(Debug)]
 pub struct Program {
     pub code: Vec<i64>,
-    pub sender: Sender<Option<i64>>,
+    sender: Sender<Option<i64>>,
     pub receiver: Receiver<Option<i64>>,
     pub output: Vec<i64>,
     pub pos: usize,
@@ -169,7 +169,7 @@ impl Program {
                 for (j, phase) in (&permutation).iter().enumerate() {
                     let n = amp_number(&amplifiers, j);
                     let program = &mut amplifiers[n];
-                    program.sender.send(Some(*phase as i64)).unwrap();
+                    program.send_input(*phase as i64);
                 }
 
                 // Send input and get output in a loop until done.
@@ -183,7 +183,7 @@ impl Program {
 
                     // println!("input ({:?}) to amplifier {:?}", input, amplifier_number);
 
-                    program.sender.send(input).unwrap();
+                    program.send_input(input.unwrap());
 
                     program.run();
 
