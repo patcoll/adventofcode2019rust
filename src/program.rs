@@ -2,10 +2,12 @@ use crate::code::Digits;
 use itertools::Itertools;
 use rayon::prelude::*;
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 
 const POSITION_MODE: u32 = 0;
 const IMMEDIATE_MODE: u32 = 1;
+const RELATIVE_MODE: u32 = 2;
 
 lazy_static! {
     static ref OPCODE_LENGTHS: HashMap<i64, usize> = {
@@ -18,6 +20,7 @@ lazy_static! {
         map.insert(6, 3);
         map.insert(7, 4);
         map.insert(8, 4);
+        map.insert(9, 2);
         map.insert(99, 1);
         map
     };
@@ -28,8 +31,9 @@ pub struct Program {
     pub code: Vec<i64>,
     pub sender: Sender<Option<i64>>,
     pub receiver: Receiver<Option<i64>>,
-    pub output: Vec<Option<i64>>,
+    pub output: Vec<i64>,
     pub pos: usize,
+    pub relative_base: isize,
     pub finished: bool,
 }
 
@@ -52,6 +56,7 @@ impl Default for Program {
             receiver,
             output: vec![],
             pos: 0,
+            relative_base: 0,
             finished: false,
         }
     }
@@ -92,7 +97,7 @@ impl Program {
 
     fn get(&self, pos: usize) -> Option<i64> {
         match pos {
-            p if p >= self.code.len() => None,
+            p if p >= self.code.len() => Some(0),
             _ => Some(self.code[pos]),
         }
     }
@@ -109,10 +114,10 @@ impl Program {
     }
 
     pub fn output(&self) -> Option<i64> {
-        if self.output.is_empty() || self.output[self.output.len() - 1].is_none() {
+        if self.output.is_empty() {
             return None;
         }
-        self.output[self.output.len() - 1]
+        Some(self.output[self.output.len() - 1])
     }
 
     pub fn find_best_phase_settings(
@@ -339,9 +344,14 @@ impl<'a> Instruction<'a> {
             let value_at_pos = self.program.get(self.pos + parameter_number);
 
             let (index, value) = match *mode {
-                POSITION_MODE => {
+                POSITION_MODE | RELATIVE_MODE => {
                     let index = if let Some(v) = value_at_pos {
-                        Some(v as usize)
+                        if *mode == RELATIVE_MODE {
+                            let sum: i64 = self.program.relative_base as i64 + v;
+                            Some(sum.try_into().unwrap())
+                        } else {
+                            Some(v.try_into().unwrap())
+                        }
                     } else {
                         None
                     };
@@ -424,7 +434,7 @@ impl<'a> Instruction<'a> {
                 if let [Some(out)] = self.values.as_slice() {
                     // println!("[program::out]: {}", out);
 
-                    self.program.output.push(Some(*out));
+                    self.program.output.push(*out);
 
                     Some(self.pos + self.opcode.length)
                 } else {
@@ -465,6 +475,14 @@ impl<'a> Instruction<'a> {
                             _ => 0,
                         },
                     );
+                }
+
+                Some(self.pos + self.opcode.length)
+            }
+            // adjust-relative-base
+            9 => {
+                if let [Some(adjust_by)] = self.values.as_slice() {
+                    self.program.relative_base += *adjust_by as isize;
                 }
 
                 Some(self.pos + self.opcode.length)
@@ -804,5 +822,28 @@ mod test {
         prog.run();
 
         assert_eq!(prog.code, &[3, 10, 99, 0, 0, 0, 0, 0, 0, 0, 111]);
+    }
+
+    #[test]
+    fn test_adjust_relative_base() {
+        let program: &[i64] = &[109, 19, 99];
+
+        let mut prog = Program::new(program, &[Some(111)]);
+        prog.relative_base = 2000;
+        prog.run();
+
+        assert_eq!(prog.relative_base, 2019);
+    }
+
+    #[test]
+    fn test_relative_mode() {
+        let program: &[i64] = &[
+            109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
+        ];
+
+        let mut prog = Program::from(program);
+        prog.run();
+
+        assert_eq!(prog.output, program);
     }
 }
