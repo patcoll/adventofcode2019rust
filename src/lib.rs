@@ -301,4 +301,9 @@ mod test {
 
         image.print();
     }
+
+    #[test]
+    fn test_day_09() {
+        todo!()
+    }
 }
