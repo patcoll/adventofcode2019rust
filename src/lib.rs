@@ -311,7 +311,7 @@ mod test {
             .collect();
 
         let mut prog = Program::from(program.as_slice());
-        prog.send_input(1);
+        prog.send_input(1).unwrap();
         prog.run();
 
         assert_eq!(prog.output().unwrap(), 3_780_860_499);
@@ -327,7 +327,7 @@ mod test {
             .collect();
 
         let mut prog = Program::from(program.as_slice());
-        prog.send_input(2);
+        prog.send_input(2).unwrap();
         prog.run();
 
         assert_eq!(prog.output().unwrap(), 33_343);

@@ -5,7 +5,7 @@ use num::Integer;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::convert::TryInto;
-use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
+use std::sync::mpsc::{channel, Receiver, Sender, SendError, TryRecvError};
 
 const POSITION_MODE: u32 = 0;
 const IMMEDIATE_MODE: u32 = 1;
@@ -130,11 +130,12 @@ impl Program {
         self.output.push(out);
     }
 
-    pub fn send_input<T>(&mut self, input: T)
+    pub fn send_input<T>(&mut self, input: T) -> Result<(), SendError<i64>>
     where
         T: Integer + ToPrimitive,
     {
-        self.sender.send(input.to_i64().unwrap()).unwrap();
+        let converted = input.to_i64().unwrap();
+        self.sender.send(converted)
     }
 
     pub fn try_recv_input(&self) -> Result<i64, TryRecvError> {
@@ -149,8 +150,8 @@ impl Program {
 
                 for phase in &permutation {
                     let mut program = self.clone();
-                    program.send_input(*phase);
-                    program.send_input(input);
+                    let _ = program.send_input(*phase);
+                    let _ = program.send_input(input);
                     program.run();
                     input = program.output().expect("expected output");
                 }
@@ -178,7 +179,7 @@ impl Program {
                 for (j, phase) in (&permutation).iter().enumerate() {
                     let n = amp_number(&amplifiers, j);
                     let program = &mut amplifiers[n];
-                    program.send_input(*phase);
+                    let _ = program.send_input(*phase);
                 }
 
                 // Send input and get output in a loop until done.
@@ -190,7 +191,7 @@ impl Program {
                     let n = amp_number(&amplifiers, j);
                     let program = &mut amplifiers[n];
 
-                    program.send_input(input);
+                    let _ = program.send_input(input);
 
                     program.run();
 
