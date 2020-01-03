@@ -32,7 +32,7 @@ lazy_static! {
 pub struct Program {
     pub code: Vec<i64>,
     sender: Sender<Option<i64>>,
-    pub receiver: Receiver<Option<i64>>,
+    receiver: Receiver<Option<i64>>,
     pub output: Vec<i64>,
     pub pos: usize,
     pub relative_base: isize,
@@ -128,6 +128,10 @@ impl Program {
 
     pub fn send_input<T>(&mut self, input: T) where T: Integer + ToPrimitive {
         self.sender.send(input.to_i64()).unwrap();
+    }
+
+    pub fn try_recv_input(&self) -> Result<Option<i64>, TryRecvError> {
+        self.receiver.try_recv()
     }
 
     pub fn find_best_phase_settings(
@@ -416,7 +420,7 @@ impl<'a> Instruction<'a> {
             }
             // input
             3 => {
-                match self.program.receiver.try_recv() {
+                match self.program.try_recv_input() {
                     Ok(input) => {
                         if let [Some(result_index)] = self.indexes.as_slice() {
                             // println!("Input ({:?}) going to index {:?}. pos: {:?}", input, result_index, self.pos);
