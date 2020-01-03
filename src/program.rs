@@ -1,5 +1,7 @@
 use crate::code::Digits;
 use itertools::Itertools;
+use num::Integer;
+use num::cast::ToPrimitive;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -113,11 +115,19 @@ impl Program {
         self.code[pos] = value;
     }
 
+    pub fn all_output(&self) -> &[i64] {
+        self.output.as_ref()
+    }
+
     pub fn output(&self) -> Option<i64> {
         if self.output.is_empty() {
             return None;
         }
         Some(self.output[self.output.len() - 1])
+    }
+
+    pub fn send_input<T>(&mut self, input: T) where T: Integer + ToPrimitive {
+        self.sender.send(input.to_i64()).unwrap();
     }
 
     pub fn find_best_phase_settings(

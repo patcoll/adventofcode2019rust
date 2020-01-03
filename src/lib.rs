@@ -304,6 +304,32 @@ mod test {
 
     #[test]
     fn test_day_09() {
-        todo!()
+        let program: Vec<i64> = include_str!("../data/d09.txt")
+            .trim()
+            .split(',')
+            .map(|node| node.parse::<_>().unwrap())
+            .collect();
+
+        let mut prog = Program::from(program.as_slice());
+        prog.send_input(1);
+        prog.run();
+
+        assert_eq!(prog.output().unwrap(), 3_780_860_499);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_day_09_part_2() {
+        let program: Vec<i64> = include_str!("../data/d09.txt")
+            .trim()
+            .split(',')
+            .map(|node| node.parse::<_>().unwrap())
+            .collect();
+
+        let mut prog = Program::from(program.as_slice());
+        prog.send_input(2);
+        prog.run();
+
+        assert_eq!(prog.output().unwrap(), 33_343);
     }
 }
