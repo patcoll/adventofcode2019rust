@@ -1,7 +1,7 @@
 use crate::code::Digits;
 use itertools::Itertools;
-use num::Integer;
 use num::cast::ToPrimitive;
+use num::Integer;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -126,7 +126,10 @@ impl Program {
         Some(self.output[self.output.len() - 1])
     }
 
-    pub fn send_input<T>(&mut self, input: T) where T: Integer + ToPrimitive {
+    pub fn send_input<T>(&mut self, input: T)
+    where
+        T: Integer + ToPrimitive,
+    {
         self.sender.send(input.to_i64()).unwrap();
     }
 
