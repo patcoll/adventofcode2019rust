@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::convert::TryInto;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash)]
 pub struct Coordinate {
@@ -8,7 +9,7 @@ pub struct Coordinate {
 
 impl Coordinate {
     pub fn manhattan_distance(&self) -> usize {
-        (self.x.abs() + self.y.abs()) as usize
+        (self.x.abs() + self.y.abs()).try_into().unwrap()
     }
 }
 
