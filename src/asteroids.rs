@@ -11,7 +11,7 @@ pub struct InvalidCoordinateError;
 impl Error for InvalidCoordinateError {}
 
 impl fmt::Display for InvalidCoordinateError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "That coordinate is not in the region")
     }
 }
@@ -51,11 +51,11 @@ impl Slope {
             denom = -denom;
         }
 
-        let obj = Slope { y: numer, x: denom };
+        Slope { y: numer, x: denom }
 
         // println!("    obj: {:?}", obj);
 
-        obj
+        // obj
     }
 }
 
