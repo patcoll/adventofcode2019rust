@@ -123,7 +123,7 @@ impl Obliteration {
         let mut visible_from = self
             .region
             .visible_from(&self.from)
-            .unwrap()
+            .unwrap() // checked `from` is valid already in constructor.
             .into_par_iter()
             .map(|c| Coordinate {
                 x: c.x - self.from.x,
