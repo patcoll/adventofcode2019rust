@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::convert::TryInto;
 
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Hash)]
 pub struct Coordinate {
     pub x: isize,
     pub y: isize,
@@ -158,7 +158,7 @@ impl Grid {
 
         let mut start_at: &Coordinate = &origin;
 
-        self.coordinates[index].push(origin);
+        self.coordinates[index].push(origin.clone());
 
         let mut path_count = 0;
 
@@ -234,11 +234,11 @@ impl Grid {
     pub fn intersection_shortest_path(&self) -> usize {
         // Get all intersections.
         let intersection = self.intersection();
-        let intersection_vec = &intersection.into_iter().collect::<Vec<Coordinate>>();
+        let intersection_vec = intersection.into_iter().collect::<Vec<Coordinate>>();
 
         intersection_vec
-            .iter()
-            .map(|&coordinate| {
+            .into_iter()
+            .map(|coordinate| {
                 // println!("coordinate: {:?}", coordinate);
 
                 self.coordinates
@@ -246,7 +246,7 @@ impl Grid {
                     .map(|coordinate_list| {
                         coordinate_list
                             .iter()
-                            .position(|&c| c == coordinate)
+                            .position(|c| *c == coordinate)
                             .expect("Should find coordinate")
                     })
                     .sum::<usize>()
