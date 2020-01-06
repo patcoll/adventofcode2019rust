@@ -1,3 +1,4 @@
+pub mod asteroids;
 pub mod code;
 pub mod fuel;
 pub mod grid;
@@ -12,6 +13,7 @@ extern crate lazy_static;
 mod test {
     use super::*;
 
+    use asteroids::Region;
     use grid::{Coordinate, Grid, Route};
     use orbits::Universe;
     use program::Program;
@@ -331,5 +333,18 @@ mod test {
         prog.run();
 
         assert_eq!(prog.output().unwrap(), 33_343);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_day_10() {
+        let map = include_str!("../data/d10.txt");
+
+        let region = Region::from(map);
+
+        assert_eq!(
+            region.max_visible_from_count(),
+            (Some(&Coordinate { x: 26, y: 29 }), 299)
+        );
     }
 }

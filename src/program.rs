@@ -5,7 +5,7 @@ use num::Integer;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::convert::TryInto;
-use std::sync::mpsc::{channel, Receiver, Sender, SendError, TryRecvError};
+use std::sync::mpsc::{channel, Receiver, SendError, Sender, TryRecvError};
 
 const POSITION_MODE: u32 = 0;
 const IMMEDIATE_MODE: u32 = 1;
