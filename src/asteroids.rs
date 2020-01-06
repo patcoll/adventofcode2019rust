@@ -1,17 +1,54 @@
 use crate::grid::Coordinate;
 use num::{Rational, Zero};
+use rayon::prelude::*;
+use std::cmp::{Ord, Ordering, PartialOrd};
 use std::collections::HashSet;
 use std::convert::TryInto;
 use std::error::Error;
-use std::fmt;
+
+fn to_cartesian(x: isize, y: isize) -> (isize, isize) {
+    (x, -y)
+}
+
+impl Coordinate {
+    pub fn angle(&self) -> f64 {
+        let (x, y) = to_cartesian(self.x, self.y);
+
+        let radians = (x as f64).atan2(y as f64);
+
+        // unnecessary, but it helped with debugging.
+        let mut deg = (radians * 180.0) / std::f64::consts::PI;
+
+        if deg < 0.0 {
+            deg += 360.0;
+        }
+
+        deg
+    }
+}
+
+impl Ord for Coordinate {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if self.eq(&other) {
+            return Ordering::Equal;
+        }
+        self.angle().partial_cmp(&other.angle()).unwrap()
+    }
+}
+
+impl PartialOrd for Coordinate {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(&other))
+    }
+}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct InvalidCoordinateError;
 
 impl Error for InvalidCoordinateError {}
 
-impl fmt::Display for InvalidCoordinateError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for InvalidCoordinateError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "That coordinate is not in the region")
     }
 }
@@ -52,18 +89,89 @@ impl Slope {
         }
 
         Slope { y: numer, x: denom }
-
-        // println!("    obj: {:?}", obj);
-
-        // obj
     }
 }
 
 #[derive(Debug, Default)]
+pub struct Obliteration {
+    region: Region,
+    from: Coordinate,
+    visible_from: Vec<Coordinate>,
+}
+
+impl Obliteration {
+    pub fn new(
+        region: &Region,
+        from: &Coordinate,
+    ) -> Result<Self, InvalidCoordinateError> {
+        if !region.contains(from) {
+            return Err(InvalidCoordinateError);
+        }
+
+        Ok(Obliteration {
+            region: region.clone(),
+            from: from.clone(),
+            ..Default::default()
+        })
+    }
+
+    fn populate_visible_from(&mut self) -> bool {
+        if !self.visible_from.is_empty() {
+            return false;
+        }
+
+        let mut visible_from = self
+            .region
+            .visible_from(&self.from)
+            .unwrap()
+            .into_par_iter()
+            .map(|c| Coordinate {
+                x: c.x - self.from.x,
+                y: c.y - self.from.y,
+            })
+            .collect::<Vec<_>>();
+
+        visible_from.sort();
+
+        visible_from = visible_from
+            .into_par_iter()
+            .map(|c| Coordinate {
+                x: c.x + self.from.x,
+                y: c.y + self.from.y,
+            })
+            .collect::<Vec<_>>();
+
+        self.visible_from = visible_from;
+
+        true
+    }
+}
+
+impl Iterator for Obliteration {
+    type Item = Coordinate;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.visible_from.is_empty() {
+            self.populate_visible_from();
+        }
+
+        if self.visible_from.is_empty() {
+            return None;
+        }
+
+        let result = self.visible_from.remove(0);
+
+        self.region.remove(&result);
+
+        Some(result)
+    }
+}
+
+#[derive(Clone, Debug, Default)]
 pub struct Region {
+    pub coordinates: HashSet<Coordinate>,
     pub width: usize,
     pub height: usize,
-    pub coordinates: HashSet<Coordinate>,
 }
 
 impl Region {
@@ -77,6 +185,10 @@ impl Region {
 
     pub fn is_empty(&self) -> bool {
         self.coordinates.is_empty()
+    }
+
+    pub fn remove(&mut self, coord: &Coordinate) -> bool {
+        self.coordinates.remove(coord)
     }
 
     pub fn contains(&self, coord: &Coordinate) -> bool {
@@ -146,12 +258,12 @@ impl Region {
     pub fn visible_from(
         &self,
         coord: &Coordinate,
-    ) -> Result<HashSet<Coordinate>, InvalidCoordinateError> {
+    ) -> Result<Vec<Coordinate>, InvalidCoordinateError> {
         if !self.contains(coord) {
             return Err(InvalidCoordinateError);
         }
 
-        let mut visible = HashSet::new();
+        let mut visible = Vec::new();
 
         for c in &self.coordinates {
             if coord == c {
@@ -160,7 +272,7 @@ impl Region {
             // println!("  {:?} checking against: {:?}", coord, c);
             if let Ok(_can_see) = self.can_see(&coord, &c) {
                 if _can_see {
-                    visible.insert(c.clone());
+                    visible.push(c.clone());
                 // println!("    CAN SEE!");
                 // can_see_for_coord += 1;
                 } else {
@@ -253,6 +365,11 @@ mod test {
 
         let slope1 = Slope::new(&Coordinate { x: 2, y: 2 }, &Coordinate { x: 3, y: 1 });
         assert_eq!(slope1, Slope { x: 1, y: -1 });
+    }
+
+    #[test]
+    fn test_to_cartesian() {
+        assert_eq!(to_cartesian(1, -1), (1, 1));
     }
 
     #[test]
@@ -453,7 +570,6 @@ mod test {
         let from = Coordinate { x: 3, y: 4 };
 
         let visible = region.visible_from(&from).unwrap();
-        // println!("visible: {:?}", visible);
 
         assert_eq!(visible.len(), 8);
 
@@ -466,17 +582,6 @@ mod test {
         assert_eq!(visible.contains(&Coordinate { x: 4, y: 3 }), true);
         assert_eq!(visible.contains(&Coordinate { x: 4, y: 4 }), true);
 
-        println!("[coordinate]: {:?}", &Coordinate { x: 1, y: 0 });
-        println!(
-            "   [visible_from]: {:?}",
-            region.visible_from(&Coordinate { x: 1, y: 0 }).unwrap()
-        );
-        println!(
-            "   [can_see]: {:?}",
-            region
-                .can_see(&Coordinate { x: 1, y: 0 }, &Coordinate { x: 0, y: 2 })
-                .unwrap()
-        );
         assert_eq!(
             region
                 .visible_from(&Coordinate { x: 1, y: 0 })
@@ -484,25 +589,70 @@ mod test {
                 .len(),
             7
         );
-        // 4,0
-        // 0,2
-        // 1,2
-        // 2,2
-        // 3,2
-        // 4,2
-        // NOT 4,3
-        // NOT 3,4
-        // 4,4
 
-        // assert_eq!(region.visible_from(&Coordinate { x: 4, y: 0 }).unwrap().len(), 7);
-        // assert_eq!(region.visible_from(&Coordinate { x: 0, y: 2 }).unwrap().len(), 6);
-        // assert_eq!(region.visible_from(&Coordinate { x: 1, y: 2 }).unwrap().len(), 7);
-        // assert_eq!(region.visible_from(&Coordinate { x: 2, y: 2 }).unwrap().len(), 7);
-        // assert_eq!(region.visible_from(&Coordinate { x: 3, y: 2 }).unwrap().len(), 7);
-        // assert_eq!(region.visible_from(&Coordinate { x: 4, y: 2 }).unwrap().len(), 5);
-        // assert_eq!(region.visible_from(&Coordinate { x: 4, y: 3 }).unwrap().len(), 7);
-        // assert_eq!(region.visible_from(&Coordinate { x: 3, y: 4 }).unwrap().len(), 8);
-        // assert_eq!(region.visible_from(&Coordinate { x: 4, y: 4 }).unwrap().len(), 7);
+        assert_eq!(
+            region
+                .visible_from(&Coordinate { x: 4, y: 0 })
+                .unwrap()
+                .len(),
+            7
+        );
+        assert_eq!(
+            region
+                .visible_from(&Coordinate { x: 0, y: 2 })
+                .unwrap()
+                .len(),
+            6
+        );
+        assert_eq!(
+            region
+                .visible_from(&Coordinate { x: 1, y: 2 })
+                .unwrap()
+                .len(),
+            7
+        );
+        assert_eq!(
+            region
+                .visible_from(&Coordinate { x: 2, y: 2 })
+                .unwrap()
+                .len(),
+            7
+        );
+        assert_eq!(
+            region
+                .visible_from(&Coordinate { x: 3, y: 2 })
+                .unwrap()
+                .len(),
+            7
+        );
+        assert_eq!(
+            region
+                .visible_from(&Coordinate { x: 4, y: 2 })
+                .unwrap()
+                .len(),
+            5
+        );
+        assert_eq!(
+            region
+                .visible_from(&Coordinate { x: 4, y: 3 })
+                .unwrap()
+                .len(),
+            7
+        );
+        assert_eq!(
+            region
+                .visible_from(&Coordinate { x: 3, y: 4 })
+                .unwrap()
+                .len(),
+            8
+        );
+        assert_eq!(
+            region
+                .visible_from(&Coordinate { x: 4, y: 4 })
+                .unwrap()
+                .len(),
+            7
+        );
     }
 
     #[test]
@@ -623,5 +773,72 @@ mod test {
             region.max_visible_from_count(),
             (Some(&Coordinate { x: 11, y: 13 }), 210)
         );
+    }
+
+    #[test]
+    fn test_obliteration_order_biggest_200th() {
+        let map = "
+        .#..##.###...#######
+        ##.############..##.
+        .#.######.########.#
+        .###.#######.####.#.
+        #####.##.#.##.###.##
+        ..#####..#.#########
+        ####################
+        #.####....###.#.#.##
+        ##.#################
+        #####.##.###..####..
+        ..######..##.#######
+        ####.##.####...##..#
+        .#####..#.######.###
+        ##...#.##########...
+        #.##########.#######
+        .####.#.###.###.#.##
+        ....##.##.###..#####
+        .#.#.###########.###
+        #.#.#.#####.####.###
+        ###.##.####.##.#..##
+        ";
+
+        let region = Region::from(map);
+        let (max_coord, _) = region.max_visible_from_count();
+
+        let mut ob = Obliteration::new(&region, &max_coord.unwrap()).unwrap();
+        assert_eq!(ob.nth(199), Some(Coordinate { x: 8, y: 2 }));
+    }
+
+    #[test]
+    #[ignore]
+    fn test_obliteration_order_biggest_count() {
+        let map = "
+        .#..##.###...#######
+        ##.############..##.
+        .#.######.########.#
+        .###.#######.####.#.
+        #####.##.#.##.###.##
+        ..#####..#.#########
+        ####################
+        #.####....###.#.#.##
+        ##.#################
+        #####.##.###..####..
+        ..######..##.#######
+        ####.##.####...##..#
+        .#####..#.######.###
+        ##...#.##########...
+        #.##########.#######
+        .####.#.###.###.#.##
+        ....##.##.###..#####
+        .#.#.###########.###
+        #.#.#.#####.####.###
+        ###.##.####.##.#..##
+        ";
+
+        let region = Region::from(map);
+        let (max_coord, _) = region.max_visible_from_count();
+
+        let ob = Obliteration::new(&region, &max_coord.unwrap()).unwrap();
+
+        // all asteroids obliterated except the origin
+        assert_eq!(ob.count(), region.len() - 1);
     }
 }

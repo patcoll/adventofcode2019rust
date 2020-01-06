@@ -13,7 +13,7 @@ extern crate lazy_static;
 mod test {
     use super::*;
 
-    use asteroids::Region;
+    use asteroids::{Obliteration, Region};
     use grid::{Coordinate, Grid, Route};
     use orbits::Universe;
     use program::Program;
@@ -336,7 +336,6 @@ mod test {
     }
 
     #[test]
-    #[ignore]
     fn test_day_10() {
         let map = include_str!("../data/d10.txt");
 
@@ -346,5 +345,19 @@ mod test {
             region.max_visible_from_count(),
             (Some(&Coordinate { x: 26, y: 29 }), 299)
         );
+    }
+
+    #[test]
+    fn test_day_10_part_2() {
+        let map = include_str!("../data/d10.txt");
+
+        let region = Region::from(map);
+        let (max_coord, _) = region.max_visible_from_count();
+
+        let mut ob = Obliteration::new(&region, &max_coord.unwrap()).unwrap();
+        let _200th = ob.nth(199).unwrap();
+
+        assert_eq!(_200th, Coordinate { x: 14, y: 19 });
+        assert_eq!(_200th.x * 100 + _200th.y, 1419);
     }
 }
