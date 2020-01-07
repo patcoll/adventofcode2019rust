@@ -365,6 +365,9 @@ mod test {
 
         let slope1 = Slope::new(&Coordinate { x: 2, y: 2 }, &Coordinate { x: 3, y: 1 });
         assert_eq!(slope1, Slope { x: 1, y: -1 });
+
+        let slope1 = Slope::new(&Coordinate { x: 2, y: 2 }, &Coordinate { x: 3, y: 2 });
+        assert_eq!(slope1, Slope { x: 1, y: 0 });
     }
 
     #[test]
